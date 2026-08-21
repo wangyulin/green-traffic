@@ -1,8 +1,8 @@
 package com.greentraffic.common.repository;
 
-import com.greentraffic.common.messaging.TrafficDataMessage;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -14,26 +14,26 @@ public interface TrafficDataRepository {
     /**
      * 保存交通数据
      */
-    boolean save(TrafficDataMessage data);
+    boolean save(TrafficMetric data);
 
     /**
      * 批量保存交通数据
      */
-    boolean saveBatch(List<TrafficDataMessage> dataList);
+    boolean saveBatch(List<TrafficMetric> dataList);
 
     /**
      * 查询指定道路的交通数据
      */
-    List<TrafficDataMessage> findByRoadId(String roadId,
-                                          LocalDateTime startTime,
-                                          LocalDateTime endTime);
+    List<TrafficMetric> findByRoadId(String roadId,
+                                          Instant startTime,
+                                          Instant endTime);
 
     /**
      * 查询平均碳排放
      */
     Double findAverageCo2Emission(String roadId,
-                                  LocalDateTime startTime,
-                                  LocalDateTime endTime);
+                                  Instant startTime,
+                                  Instant endTime);
 
     /**
      * 检查连接状态
@@ -43,5 +43,5 @@ public interface TrafficDataRepository {
     /**
      * 清理过期数据
      */
-    void cleanOldData(LocalDateTime beforeTime);
+    void cleanOldData(Instant beforeTime);
 }

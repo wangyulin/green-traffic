@@ -1,12 +1,12 @@
 package com.greentraffic.core.service;
 
-import com.greentraffic.common.messaging.TrafficDataMessage;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.greentraffic.common.repository.AsyncTrafficDataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -24,10 +24,10 @@ public class AsyncTrafficDataQueryService {
     /**
      * 异步查询道路历史数据
      */
-    public CompletableFuture<List<TrafficDataMessage>> asyncQueryRoadHistory(
+    public CompletableFuture<List<TrafficMetric>> asyncQueryRoadHistory(
             String roadId,
-            LocalDateTime startTime,
-            LocalDateTime endTime) {
+            Instant startTime,
+            Instant endTime) {
 
         log.info("异步查询道路历史数据: RoadId={}", roadId);
         return asyncTrafficDataRepository.asyncFindByRoadId(roadId, startTime, endTime);
@@ -38,8 +38,8 @@ public class AsyncTrafficDataQueryService {
      */
     public CompletableFuture<Double> asyncQueryAverageCo2(
             String roadId,
-            LocalDateTime startTime,
-            LocalDateTime endTime) {
+            Instant startTime,
+            Instant endTime) {
 
         log.info("异步查询平均碳排放: RoadId={}", roadId);
         return asyncTrafficDataRepository.asyncFindAverageCo2Emission(

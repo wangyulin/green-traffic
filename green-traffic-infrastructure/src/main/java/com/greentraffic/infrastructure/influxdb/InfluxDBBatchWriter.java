@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.influxdb;
 
-import com.greentraffic.common.messaging.TrafficDataMessage;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.WritePrecision;
@@ -8,8 +8,6 @@ import com.influxdb.client.write.Point;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -28,7 +26,7 @@ public class InfluxDBBatchWriter {
 
     private final InfluxDBClient influxDBClient;
     private final InfluxDBProperties properties;
-    private final List<TrafficDataMessage> buffer = new ArrayList<>();
+    private final List<TrafficMetric> buffer = new ArrayList<>();
     private final Object lock = new Object();
     private final ScheduledExecutorService scheduler;
 
@@ -53,7 +51,7 @@ public class InfluxDBBatchWriter {
     /**
      * 添加数据到缓冲区
      */
-    public void addToBatch(TrafficDataMessage data) {
+    public void addToBatch(TrafficMetric data) {
         synchronized (lock) {
             buffer.add(data);
 
@@ -66,7 +64,7 @@ public class InfluxDBBatchWriter {
     /**
      * 批量添加数据
      */
-    public void addAllToBatch(List<TrafficDataMessage> dataList) {
+    public void addAllToBatch(List<TrafficMetric> dataList) {
         synchronized (lock) {
             buffer.addAll(dataList);
 
@@ -85,12 +83,12 @@ public class InfluxDBBatchWriter {
                 return;
             }
 
-            List<TrafficDataMessage> batch = new ArrayList<>(buffer);
+            List<TrafficMetric> batch = new ArrayList<>(buffer);
             buffer.clear();
 
             try {
                 List<Point> points = new ArrayList<>();
-                for (TrafficDataMessage data : batch) {
+                for (TrafficMetric data : batch) {
                     points.add(buildPoint(data));
                 }
 
@@ -112,28 +110,23 @@ public class InfluxDBBatchWriter {
     /**
      * 构建数据点
      */
-    private Point buildPoint(TrafficDataMessage data) {
-        Instant timestamp = convertToInstant(data.getTimestamp());
+    private Point buildPoint(TrafficMetric data) {
+        Instant timestamp = data.timestamp() == null ? Instant.now() : data.timestamp();
 
         return Point.measurement("traffic_data")
                 .time(timestamp, WritePrecision.MS)
-                .addTag("road_id", data.getRoadId())
-                .addTag("vehicle_type", data.getVehicleType())
-                .addTag("location", data.getLocation())
-                .addField("traffic_flow", data.getTrafficFlow())
-                .addField("average_speed", data.getAverageSpeed())
-                .addField("co2_emission", data.getCo2Emission());
+                .addTag("road_id", data.roadId())
+                .addTag("vehicle_type", data.vehicleType())
+                .addTag("location", data.location())
+                .addField("traffic_flow", data.trafficFlow())
+                .addField("average_speed", data.averageSpeed())
+                .addField("co2_emission", data.co2Emission());
     }
 
     /**
      * 转换时间
      */
-    private Instant convertToInstant(LocalDateTime dateTime) {
-        if (dateTime == null) {
-            return Instant.now();
-        }
-        return dateTime.atZone(ZoneId.systemDefault()).toInstant();
-    }
+    // 时间由 TrafficMetric.timestamp() 提供（Instant），不再需要 LocalDateTime 转换辅助方法
 
     /**
      * 获取缓冲区大小

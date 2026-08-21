@@ -1,7 +1,7 @@
 package com.greentraffic.infrastructure.influxdb;
 
-import com.greentraffic.common.messaging.TrafficDataMessage;
 import com.greentraffic.common.repository.AsyncTrafficDataRepository;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.QueryApi;
 import com.influxdb.query.FluxRecord;
@@ -9,8 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,13 +26,13 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
     private final InfluxDBProperties properties;
 
     @Override
-    public CompletableFuture<List<TrafficDataMessage>> asyncFindByRoadId(
+        public CompletableFuture<List<TrafficMetric>> asyncFindByRoadId(
             String roadId,
-            LocalDateTime startTime,
-            LocalDateTime endTime) {
+            Instant startTime,
+            Instant endTime) {
 
         return CompletableFuture.supplyAsync(() -> {
-            List<TrafficDataMessage> results = new ArrayList<>();
+            List<TrafficMetric> results = new ArrayList<>();
 
             try {
                 String fluxQuery = buildQueryString(roadId, startTime, endTime);
@@ -44,9 +43,9 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
 
                 for (var table : tables) {
                     for (FluxRecord record : table.getRecords()) {
-                        TrafficDataMessage data = parseRecord(record);
-                        if (data != null) {
-                            results.add(data);
+                        TrafficMetric metric = parseRecord(record);
+                        if (metric != null) {
+                            results.add(metric);
                         }
                     }
                 }
@@ -62,10 +61,10 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
     }
 
     @Override
-    public CompletableFuture<Double> asyncFindAverageCo2Emission(
+        public CompletableFuture<Double> asyncFindAverageCo2Emission(
             String roadId,
-            LocalDateTime startTime,
-            LocalDateTime endTime) {
+            Instant startTime,
+            Instant endTime) {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -93,8 +92,8 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
     }
 
     private String buildQueryString(String roadId,
-                                    LocalDateTime startTime,
-                                    LocalDateTime endTime) {
+                                    Instant startTime,
+                                    Instant endTime) {
         StringBuilder query = new StringBuilder();
         query.append(String.format("from(bucket: \"%s\") ", properties.getBucket()));
         query.append(String.format("|> range(start: %s, stop: %s) ",
@@ -111,8 +110,8 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
     }
 
     private String buildAverageCo2Query(String roadId,
-                                        LocalDateTime startTime,
-                                        LocalDateTime endTime) {
+                                        Instant startTime,
+                                        Instant endTime) {
         StringBuilder query = new StringBuilder();
         query.append(String.format("from(bucket: \"%s\") ", properties.getBucket()));
         query.append(String.format("|> range(start: %s, stop: %s) ",
@@ -129,43 +128,45 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
         return query.toString();
     }
 
-    private TrafficDataMessage parseRecord(FluxRecord record) {
+    private TrafficMetric parseRecord(FluxRecord record) {
         try {
-            TrafficDataMessage data = new TrafficDataMessage();
-
-            Object roadIdObj = record.getValueByKey("road_id");
-            Object vehicleTypeObj = record.getValueByKey("vehicle_type");
-            Object locationObj = record.getValueByKey("location");
-
-            data.setRoadId(roadIdObj != null ? roadIdObj.toString() : null);
-            data.setVehicleType(vehicleTypeObj != null ? vehicleTypeObj.toString() : null);
-            data.setLocation(locationObj != null ? locationObj.toString() : null);
+            String roadId = record.getValueByKey("road_id") != null ? record.getValueByKey("road_id").toString() : null;
+            String vehicleType = record.getValueByKey("vehicle_type") != null ? record.getValueByKey("vehicle_type").toString() : null;
+            String location = record.getValueByKey("location") != null ? record.getValueByKey("location").toString() : null;
 
             String field = record.getField();
             Object value = record.getValue();
 
+            Integer trafficFlow = null;
+            Double averageSpeed = null;
+            Double co2 = null;
+
             if (field != null && value != null) {
                 switch (field) {
                     case "traffic_flow":
-                        data.setTrafficFlow(((Number) value).intValue());
+                        trafficFlow = ((Number) value).intValue();
                         break;
                     case "average_speed":
-                        data.setAverageSpeed(((Number) value).doubleValue());
+                        averageSpeed = ((Number) value).doubleValue();
                         break;
                     case "co2_emission":
-                        data.setCo2Emission(((Number) value).doubleValue());
+                        co2 = ((Number) value).doubleValue();
                         break;
                 }
             }
 
-            if (record.getTime() != null) {
-                data.setTimestamp(LocalDateTime.ofInstant(
-                        record.getTime(),
-                        ZoneId.systemDefault()
-                ));
-            }
+            Instant instant = record.getTime();
 
-            return data;
+            return new TrafficMetric(
+                    roadId,
+                    null,
+                    vehicleType,
+                    trafficFlow,
+                    averageSpeed,
+                    co2,
+                    location,
+                    instant
+            );
 
         } catch (Exception e) {
             log.error("解析记录失败", e);
@@ -173,12 +174,10 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
         }
     }
 
-    private String formatTime(LocalDateTime dateTime) {
-        if (dateTime == null) {
+    private String formatTime(Instant instant) {
+        if (instant == null) {
             return "now()";
         }
-        return dateTime.atZone(ZoneId.systemDefault())
-                .toOffsetDateTime()
-                .toString();
+        return instant.toString();
     }
 }

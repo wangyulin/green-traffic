@@ -1,8 +1,8 @@
 package com.greentraffic.common.repository;
 
-import com.greentraffic.common.messaging.TrafficDataMessage;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -15,10 +15,10 @@ public interface AsyncTrafficDataRepository {
     /**
      * 异步查询交通数据
      */
-    CompletableFuture<List<TrafficDataMessage>> asyncFindByRoadId(
+    CompletableFuture<List<TrafficMetric>> asyncFindByRoadId(
             String roadId,
-            LocalDateTime startTime,
-            LocalDateTime endTime
+            Instant startTime,
+            Instant endTime
     );
 
     /**
@@ -26,7 +26,7 @@ public interface AsyncTrafficDataRepository {
      */
     CompletableFuture<Double> asyncFindAverageCo2Emission(
             String roadId,
-            LocalDateTime startTime,
-            LocalDateTime endTime
+            Instant startTime,
+            Instant endTime
     );
 }

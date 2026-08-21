@@ -1,7 +1,7 @@
 package com.greentraffic.simulator;
 
 import com.greentraffic.core.repository.TrafficRepository;
-import com.greentraffic.model.entity.TrafficData;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -38,14 +38,17 @@ public class TrafficSensorSimulator {
         // 保留一位小数
         double speedRounded = Math.round(speed * 10.0) / 10.0;
 
-        TrafficData data = new TrafficData(
+        TrafficMetric metric = new TrafficMetric(
             "ROAD-001",
             "EAST",
+            null,
             vehicleCount,
             speedRounded,
+            null,
+            null,
             Instant.now()
         );
 
-        repository.save(data);
+        repository.save(metric);
     }
 }

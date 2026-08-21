@@ -3,7 +3,7 @@ package com.greentraffic.infrastructure.influxdb.repository;
 import com.greentraffic.core.repository.TrafficRepository;
 import com.greentraffic.infrastructure.influxdb.client.InfluxDbClientProvider;
 import com.greentraffic.infrastructure.influxdb.config.InfluxDbProperties;
-import com.greentraffic.model.entity.TrafficData;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.client.domain.WritePrecision;
@@ -31,15 +31,15 @@ public class InfluxTrafficRepository implements TrafficRepository {
     }
 
     @Override
-    public void save(TrafficData data) {
+    public void save(TrafficMetric metric) {
 
         Point point = Point
                 .measurement("traffic_flow")
-                .addTag("road_id", data.roadId())
-                .addTag("direction", data.direction())
-                .addField("vehicle_count", data.vehicleCount())
-                .addField("speed", data.speed())
-                .time(data.time(), WritePrecision.S);
+                .addTag("road_id", metric.roadId())
+                .addTag("direction", metric.direction())
+                .addField("vehicle_count", metric.trafficFlow())
+                .addField("speed", metric.averageSpeed())
+                .time(metric.timestamp(), WritePrecision.S);
 
         WriteApiBlocking writeApi = client.getWriteApiBlocking();
 
@@ -47,7 +47,7 @@ public class InfluxTrafficRepository implements TrafficRepository {
     }
 
     @Override
-    public List<TrafficData> query(
+    public List<TrafficMetric> query(
             Instant start,
             Instant stop) {
 
@@ -68,7 +68,7 @@ public class InfluxTrafficRepository implements TrafficRepository {
         List<FluxTable> tables =
             client.getQueryApi().query(query);
 
-        List<TrafficData> result = new ArrayList<>();
+        List<TrafficMetric> result = new ArrayList<>();
 
         // 遍历表和记录，构建结果
         for (FluxTable table : tables) {
@@ -88,20 +88,26 @@ public class InfluxTrafficRepository implements TrafficRepository {
 
             Integer vehicleCount = null;
             Double speed = null;
+            Double co2 = null;
 
-            if ("vehicle_count".equals(record.getField())) {
+            String field = record.getField();
+            if ("vehicle_count".equals(field)) {
                 vehicleCount = ((Number) value).intValue();
-            }
-
-            if ("speed".equals(record.getField())) {
+            } else if ("speed".equals(field)) {
                 speed = ((Number) value).doubleValue();
+            } else if ("co2_emission".equals(field)) {
+                co2 = ((Number) value).doubleValue();
             }
 
-            result.add(new TrafficData(
+            // map to TrafficMetric: vehicleCount -> trafficFlow, speed -> averageSpeed, co2 -> co2Emission
+            result.add(new TrafficMetric(
                     roadId,
                     direction,
+                    null,
                     vehicleCount,
                     speed,
+                    co2,
+                    null,
                     record.getTime()
             ));
             }

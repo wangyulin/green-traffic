@@ -1,7 +1,7 @@
 package com.greentraffic.infrastructure.influxdb;
 
-import com.greentraffic.common.messaging.TrafficDataMessage;
 import com.greentraffic.common.repository.TrafficDataRepository;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.QueryApi;
 import com.influxdb.client.WriteApiBlocking;
@@ -14,9 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +36,7 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
     private final AtomicInteger errorCount = new AtomicInteger(0);
 
     @Override
-    public boolean save(TrafficDataMessage data) {
+    public boolean save(TrafficMetric data) {
         try {
             Point point = buildTrafficDataPoint(data);
 
@@ -47,24 +45,24 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
                     properties.getOrg(),
                     point);
 
-            writeCount.incrementAndGet();
-            log.debug("写入交通数据成功: RoadId={}, CO2={}",
-                    data.getRoadId(), data.getCo2Emission());
+                writeCount.incrementAndGet();
+                log.debug("写入交通数据成功: RoadId={}, CO2={}",
+                    data.roadId(), data.co2Emission());
 
             return true;
 
         } catch (Exception e) {
             errorCount.incrementAndGet();
-            log.error("写入交通数据失败: RoadId={}", data.getRoadId(), e);
+            log.error("写入交通数据失败: RoadId={}", data.roadId(), e);
             return false;
         }
     }
 
     @Override
-    public boolean saveBatch(List<TrafficDataMessage> dataList) {
+    public boolean saveBatch(List<TrafficMetric> dataList) {
         try {
             List<Point> points = new ArrayList<>();
-            for (TrafficDataMessage data : dataList) {
+            for (TrafficMetric data : dataList) {
                 points.add(buildTrafficDataPoint(data));
             }
 
@@ -86,10 +84,10 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
     }
 
     @Override
-    public List<TrafficDataMessage> findByRoadId(String roadId,
-                                                 LocalDateTime startTime,
-                                                 LocalDateTime endTime) {
-        List<TrafficDataMessage> results = new ArrayList<>();
+    public List<TrafficMetric> findByRoadId(String roadId,
+                                                 Instant startTime,
+                                                 Instant endTime) {
+        List<TrafficMetric> results = new ArrayList<>();
 
         try {
             String fluxQuery = buildQueryString(roadId, startTime, endTime);
@@ -102,9 +100,9 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
             // 解析结果
             for (FluxTable table : tables) {
                 for (FluxRecord record : table.getRecords()) {
-                    TrafficDataMessage data = parseQueryRecord(record);
-                    if (data != null) {
-                        results.add(data);
+                    TrafficMetric metric = parseQueryRecord(record);
+                    if (metric != null) {
+                        results.add(metric);
                     }
                 }
             }
@@ -120,8 +118,8 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
 
     @Override
     public Double findAverageCo2Emission(String roadId,
-                                         LocalDateTime startTime,
-                                         LocalDateTime endTime) {
+                                         Instant startTime,
+                                         Instant endTime) {
         try {
             String fluxQuery = buildAverageCo2Query(roadId, startTime, endTime);
 
@@ -159,19 +157,20 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
     }
 
     @Override
-    public void cleanOldData(LocalDateTime beforeTime) {
+        public void cleanOldData(Instant beforeTime) {
         try {
+
             String predicate = String.format(
-                    "_measurement=\"traffic_data\" AND _time < %s",
-                    formatTimeForFlux(beforeTime)
+                "_measurement=\"traffic_data\" AND _time < %s",
+                formatTimeForFlux(beforeTime)
             );
 
             var deleteApi = influxDBClient.getDeleteApi();
 
             // 使用正确的 delete 方法
             deleteApi.delete(
-                    OffsetDateTime.now().minusDays(properties.getRetentionDays()),
-                    OffsetDateTime.now(),
+                        OffsetDateTime.now().minusDays(properties.getRetentionDays()),
+                        OffsetDateTime.now(),
                     predicate,
                     properties.getBucket(),
                     properties.getOrg()
@@ -187,28 +186,28 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
     /**
      * 构建交通数据 Point
      */
-    private Point buildTrafficDataPoint(TrafficDataMessage data) {
-        Instant timestamp = convertToInstant(data.getTimestamp());
+    private Point buildTrafficDataPoint(TrafficMetric data) {
+        Instant timestamp = data.timestamp() == null ? Instant.now() : data.timestamp();
 
         return Point.measurement("traffic_data")
                 .time(timestamp, WritePrecision.MS)
-                .addTag("road_id", data.getRoadId())
-                .addTag("vehicle_type", data.getVehicleType())
-                .addTag("location", data.getLocation())
-                .addField("traffic_flow", data.getTrafficFlow())
-                .addField("average_speed", data.getAverageSpeed())
-                .addField("co2_emission", data.getCo2Emission());
+                .addTag("road_id", data.roadId())
+                .addTag("vehicle_type", data.vehicleType())
+                .addTag("location", data.location())
+                .addField("traffic_flow", data.trafficFlow())
+                .addField("average_speed", data.averageSpeed())
+                .addField("co2_emission", data.co2Emission());
     }
 
     /**
      * 构建查询语句
      */
     private String buildQueryString(String roadId,
-                                    LocalDateTime startTime,
-                                    LocalDateTime endTime) {
+                                    Instant startTime,
+                                    Instant endTime) {
         StringBuilder query = new StringBuilder();
         query.append(String.format("from(bucket: \"%s\") ", properties.getBucket()));
-        query.append(String.format("|> range(start: %s, stop: %s) ",
+                query.append(String.format("|> range(start: %s, stop: %s) ",
                 formatTimeForFlux(startTime), formatTimeForFlux(endTime)));
         query.append("|> filter(fn: (r) => r._measurement == \"traffic_data\") ");
 
@@ -227,8 +226,8 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
      * 构建平均碳排放查询
      */
     private String buildAverageCo2Query(String roadId,
-                                        LocalDateTime startTime,
-                                        LocalDateTime endTime) {
+                                        Instant startTime,
+                                        Instant endTime) {
         StringBuilder query = new StringBuilder();
         query.append(String.format("from(bucket: \"%s\") ", properties.getBucket()));
         query.append(String.format("|> range(start: %s, stop: %s) ",
@@ -248,44 +247,45 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
     /**
      * 解析查询记录
      */
-    private TrafficDataMessage parseQueryRecord(FluxRecord record) {
+    private TrafficMetric parseQueryRecord(FluxRecord record) {
         try {
-            TrafficDataMessage data = new TrafficDataMessage();
-
             // 解析标签
-            Object roadIdObj = record.getValueByKey("road_id");
-            Object vehicleTypeObj = record.getValueByKey("vehicle_type");
-            Object locationObj = record.getValueByKey("location");
+            String roadId = record.getValueByKey("road_id") != null ? record.getValueByKey("road_id").toString() : null;
+            String vehicleType = record.getValueByKey("vehicle_type") != null ? record.getValueByKey("vehicle_type").toString() : null;
+            String location = record.getValueByKey("location") != null ? record.getValueByKey("location").toString() : null;
 
-            data.setRoadId(roadIdObj != null ? roadIdObj.toString() : null);
-            data.setVehicleType(vehicleTypeObj != null ? vehicleTypeObj.toString() : null);
-            data.setLocation(locationObj != null ? locationObj.toString() : null);
+            // 解析字段 - 由于 query 使用了 pivot，字段作为列出现在 record 中，使用 getValueByKey 读取
+            Integer trafficFlow = null;
+            Double averageSpeed = null;
+            Double co2 = null;
 
-            // 解析字段 - 使用 getField() 和 getValue()
-            String field = record.getField();
-            Object value = record.getValue();
-
-            if (field != null && value != null) {
-                switch (field) {
-                    case "traffic_flow":
-                        data.setTrafficFlow(((Number) value).intValue());
-                        break;
-                    case "average_speed":
-                        data.setAverageSpeed(((Number) value).doubleValue());
-                        break;
-                    case "co2_emission":
-                        data.setCo2Emission(((Number) value).doubleValue());
-                        break;
-                }
+            Object tf = record.getValueByKey("traffic_flow");
+            if (tf instanceof Number) {
+                trafficFlow = ((Number) tf).intValue();
             }
 
-            // 解析时间
+            Object avg = record.getValueByKey("average_speed");
+            if (avg instanceof Number) {
+                averageSpeed = ((Number) avg).doubleValue();
+            }
+
+            Object c = record.getValueByKey("co2_emission");
+            if (c instanceof Number) {
+                co2 = ((Number) c).doubleValue();
+            }
+
             Instant instant = record.getTime();
-            if (instant != null) {
-                data.setTimestamp(LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));
-            }
 
-            return data;
+            return new TrafficMetric(
+                    roadId,
+                    null,
+                    vehicleType,
+                    trafficFlow,
+                    averageSpeed,
+                    co2,
+                    location,
+                    instant
+            );
 
         } catch (Exception e) {
             log.error("解析查询记录失败", e);
@@ -296,22 +296,11 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
     /**
      * 转换时间
      */
-    private Instant convertToInstant(LocalDateTime dateTime) {
-        if (dateTime == null) {
-            return Instant.now();
-        }
-        return dateTime.atZone(ZoneId.systemDefault()).toInstant();
-    }
-
-    /**
-     * 格式化时间为 Flux 查询格式
-     */
-    private String formatTimeForFlux(LocalDateTime dateTime) {
-        if (dateTime == null) {
+    private String formatTimeForFlux(Instant instant) {
+        if (instant == null) {
             return "now()";
         }
-        return dateTime.atZone(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        return instant.toString();
     }
 
     /**

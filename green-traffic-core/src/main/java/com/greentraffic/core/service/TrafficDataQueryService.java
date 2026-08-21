@@ -1,12 +1,12 @@
 package com.greentraffic.core.service;
 
-import com.greentraffic.common.messaging.TrafficDataMessage;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.greentraffic.common.repository.TrafficDataRepository;  // 依赖接口，不是具体实现
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -28,9 +28,9 @@ public class TrafficDataQueryService {
     /**
      * 查询道路历史数据
      */
-    public List<TrafficDataMessage> queryRoadHistory(String roadId,
-                                                     LocalDateTime startTime,
-                                                     LocalDateTime endTime) {
+    public List<TrafficMetric> queryRoadHistory(String roadId,
+                                                     Instant startTime,
+                                                     Instant endTime) {
         log.info("查询道路历史数据: RoadId={}, Start={}, End={}",
                 roadId, startTime, endTime);
 
@@ -40,9 +40,9 @@ public class TrafficDataQueryService {
     /**
      * 查询最近一小时的数据
      */
-    public List<TrafficDataMessage> queryRecentHourData(String roadId) {
-        LocalDateTime endTime = LocalDateTime.now();
-        LocalDateTime startTime = endTime.minusHours(1);
+    public List<TrafficMetric> queryRecentHourData(String roadId) {
+        Instant endTime = Instant.now();
+        Instant startTime = endTime.minusSeconds(3600);
 
         return queryRoadHistory(roadId, startTime, endTime);
     }
@@ -50,9 +50,9 @@ public class TrafficDataQueryService {
     /**
      * 查询最近一天的数据
      */
-    public List<TrafficDataMessage> queryRecentDayData(String roadId) {
-        LocalDateTime endTime = LocalDateTime.now();
-        LocalDateTime startTime = endTime.minusDays(1);
+    public List<TrafficMetric> queryRecentDayData(String roadId) {
+        Instant endTime = Instant.now();
+        Instant startTime = endTime.minusSeconds(86400);
 
         return queryRoadHistory(roadId, startTime, endTime);
     }
@@ -61,8 +61,8 @@ public class TrafficDataQueryService {
      * 查询道路平均碳排放
      */
     public Double queryAverageCo2(String roadId,
-                                  LocalDateTime startTime,
-                                  LocalDateTime endTime) {
+                                  Instant startTime,
+                                  Instant endTime) {
         log.info("查询道路平均碳排放: RoadId={}", roadId);
 
         return trafficDataRepository.findAverageCo2Emission(roadId, startTime, endTime);
@@ -72,8 +72,8 @@ public class TrafficDataQueryService {
      * 查询最近一小时的平均碳排放
      */
     public Double queryRecentHourAverageCo2(String roadId) {
-        LocalDateTime endTime = LocalDateTime.now();
-        LocalDateTime startTime = endTime.minusHours(1);
+        Instant endTime = Instant.now();
+        Instant startTime = endTime.minusSeconds(3600);
 
         return queryAverageCo2(roadId, startTime, endTime);
     }
@@ -90,7 +90,7 @@ public class TrafficDataQueryService {
     /**
      * 清理过期数据
      */
-    public void cleanOldData(LocalDateTime beforeTime) {
+    public void cleanOldData(Instant beforeTime) {
         log.info("清理过期数据: {}", beforeTime);
         trafficDataRepository.cleanOldData(beforeTime);
     }

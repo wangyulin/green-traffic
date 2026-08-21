@@ -2,7 +2,7 @@ package com.greentraffic.core.service;
 
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessagePublisher;
-import com.greentraffic.common.messaging.TrafficDataMessage;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.greentraffic.common.messaging.TrafficMessageTypes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,28 +25,29 @@ public class TrafficDataService {
     /**
      * 生成并发送交通数据
      */
-    public void generateAndSendTrafficData() {
-        TrafficDataMessage data = TrafficDataMessage.builder()
-                .roadId("ROAD_" + random.nextInt(100))
-                .vehicleType(getRandomVehicleType())
-                .trafficFlow(random.nextInt(200) + 50)
-                .averageSpeed(random.nextDouble() * 60 + 10)
-                .co2Emission(random.nextDouble() * 100)
-                .timestamp(LocalDateTime.now())
-                .location("Location_" + random.nextInt(50))
-                .build();
+        public void generateAndSendTrafficData() {
+        TrafficMetric metric = new TrafficMetric(
+            "ROAD_" + random.nextInt(100),
+            null,
+            getRandomVehicleType(),
+            random.nextInt(200) + 50,
+            random.nextDouble() * 60 + 10,
+            random.nextDouble() * 100,
+            "Location_" + random.nextInt(50),
+            java.time.Instant.now()
+        );
 
         // 创建消息
-        Message<TrafficDataMessage> message = Message.of(
-                TrafficMessageTypes.TRAFFIC_DATA,
-                data
+        Message<TrafficMetric> message = Message.of(
+            TrafficMessageTypes.TRAFFIC_DATA,
+            metric
         );
 
         // 发布消息
         messagePublisher.publish(message);
 
-        log.info("交通数据已发送: {}", data);
-    }
+        log.info("交通数据已发送: {}", metric);
+        }
 
     /**
      * 批量发送交通数据

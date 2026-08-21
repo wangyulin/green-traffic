@@ -1,7 +1,7 @@
 package com.greentraffic.infrastructure.influxdb;
 
 import com.alibaba.fastjson2.JSON;
-import com.greentraffic.model.event.CarbonEmissionEvent;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.greentraffic.infrastructure.influxdb.client.InfluxDbClientProvider;
 import com.greentraffic.infrastructure.influxdb.config.InfluxDbProperties;
 import com.influxdb.client.InfluxDBClient;
@@ -30,21 +30,21 @@ public class CarbonEmissionEventListener {
     }
 
     @EventListener
-    public void onCarbonEmission(CarbonEmissionEvent event) {
+    public void onCarbonEmission(TrafficMetric event) {
         try {
             logger.info("Spring Events message : {}", JSON.toJSONString(event));
             Point p = Point.measurement("traffic_flow")
-                    .time(event.getTimestamp() == null ? Instant.now() : event.getTimestamp(), WritePrecision.S)
-                    .addTag("road_id", event.getRoadId())
-                    .addTag("direction", event.getDirection())
-                    .addField("vehicle_count", event.getVehicleCount())
-                    .addField("speed", event.getAverageSpeed())
-                    .addField("co2_emission", event.getCo2Emission());
+                    .time(event.timestamp() == null ? Instant.now() : event.timestamp(), WritePrecision.S)
+                    .addTag("road_id", event.roadId())
+                    .addTag("direction", event.direction())
+                    .addField("vehicle_count", event.trafficFlow())
+                    .addField("speed", event.averageSpeed())
+                    .addField("co2_emission", event.co2Emission());
 
             WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
             // 与 InfluxTrafficRepository 保持一致的写入方式
             writeApi.writePoint(p);
-            logger.debug("写入 InfluxDB 成功: road={}, ts={}", event.getRoadId(), event.getTimestamp());
+            logger.debug("写入 InfluxDB 成功: road={}, ts={}", event.roadId(), event.timestamp());
         } catch (Exception e) {
             logger.error("仿真事件写入 InfluxDB 失败", e);
         }

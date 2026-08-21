@@ -1,6 +1,6 @@
 package com.greentraffic.simulator;
 
-import com.greentraffic.model.event.CarbonEmissionEvent;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,15 +40,17 @@ public class CarbonEmissionSimulator {
 
         double co2 = Math.round((vehicleCount * 0.12 + ThreadLocalRandom.current().nextDouble(-1.0, 1.0)) * 100.0) / 100.0;
 
-        CarbonEmissionEvent event = CarbonEmissionEvent.builder()
-                .roadId("ROAD-001")
-                .direction("EAST")
-                .vehicleCount(vehicleCount)
-                .averageSpeed(speed)
-                .co2Emission(co2)
-                .timestamp(Instant.now())
-                .build();
+        TrafficMetric metric = new TrafficMetric(
+            "ROAD-001",
+            "EAST",
+            null,
+            vehicleCount,
+            speed,
+            co2,
+            null,
+            Instant.now()
+        );
 
-        publisher.publishEvent(event);
+        publisher.publishEvent(metric);
     }
 }

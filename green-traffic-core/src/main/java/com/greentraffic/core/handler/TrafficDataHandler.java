@@ -2,7 +2,7 @@ package com.greentraffic.core.handler;
 
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
-import com.greentraffic.common.messaging.TrafficDataMessage;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.greentraffic.common.messaging.TrafficMessageTypes;
 import com.greentraffic.common.repository.TrafficDataRepository;
 import jakarta.annotation.PostConstruct;
@@ -44,7 +44,7 @@ public class TrafficDataHandler {
 
     private void handleTrafficData(Message<?> message) {
         try {
-            if (message.getPayload() instanceof TrafficDataMessage data) {
+            if (message.getPayload() instanceof TrafficMetric data) {
                 processTrafficData(data);
                 processedCount.incrementAndGet();
             }
@@ -54,22 +54,22 @@ public class TrafficDataHandler {
         }
     }
 
-    private void processTrafficData(TrafficDataMessage data) {
+    private void processTrafficData(TrafficMetric data) {
         // 使用接口保存数据
         boolean success = trafficDataRepository.save(data);
 
         if (success) {
-            log.debug("数据已保存: RoadId={}", data.getRoadId());
+            log.debug("数据已保存: RoadId={}", data.roadId());
             checkAndSendAlert(data);
         } else {
-            log.error("数据保存失败: RoadId={}", data.getRoadId());
+            log.error("数据保存失败: RoadId={}", data.roadId());
         }
     }
 
-    private void checkAndSendAlert(TrafficDataMessage data) {
-        if (data.getCo2Emission() > 80) {
+    private void checkAndSendAlert(TrafficMetric data) {
+        if (data.co2Emission() != null && data.co2Emission() > 80) {
             log.warn("CO2 排放超标: RoadId={}, CO2={}",
-                    data.getRoadId(), data.getCo2Emission());
+                    data.roadId(), data.co2Emission());
         }
     }
 
