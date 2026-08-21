@@ -4,14 +4,15 @@ import com.greentraffic.core.repository.TrafficRepository;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
+@ConditionalOnBean(TrafficRepository.class)
 public class TrafficSensorSimulator {
 
     private final TrafficRepository repository;

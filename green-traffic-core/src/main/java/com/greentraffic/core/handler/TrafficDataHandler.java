@@ -1,10 +1,11 @@
+/*
 package com.greentraffic.core.handler;
 
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.greentraffic.common.messaging.TrafficMessageTypes;
-import com.greentraffic.core.port.outbound.TrafficDataRepository;
+import com.greentraffic.core.port.output.TrafficDataRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -13,13 +14,15 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+*/
 /**
  * 交通数据消息处理器
  * 依赖接口而不是具体实现
  *
  * 模块：green-traffic-core
  * 包：com.greentraffic.core.handler
- */
+ *//*
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -78,4 +81,4 @@ public class TrafficDataHandler {
         messageSubscriber.unsubscribe(TrafficMessageTypes.TRAFFIC_DATA);
         log.info("TrafficDataHandler 已清理");
     }
-}
+}*/

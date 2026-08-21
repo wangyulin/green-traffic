@@ -1,0 +1,41 @@
+spring:
+  config:
+    activate:
+      on-profile: vm
+  datasource:
+    url: jdbc:mysql://localhost:3306/green_traffic?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+    username: green_traffic
+    password: 123456Aa@
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: MySQLConnectionPool
+
+# VictoriaMetrics environment overrides
+metrics:
+  sink: vm
+  batch-size: ${METRICS_BATCH_SIZE:500}
+  vm-url: ${VM_URL:http://127.0.0.1:8428/write}
+  auth-type: ${METRICS_AUTH_TYPE:none} # none | bearer | basic
+  token: ${VM_TOKEN:}
+  username: ${VM_USERNAME:}
+  password: ${VM_PASSWORD:}
+
+  # retry and flush tuning
+  max-retries: ${METRICS_MAX_RETRIES:5}
+  retry-initial-delay-ms: ${METRICS_RETRY_INITIAL_DELAY_MS:500}
+  flush-interval-ms: ${METRICS_FLUSH_INTERVAL_MS:2000}
+
+# Example: to activate this profile, set SPRING_PROFILES_ACTIVE=vm or pass --spring.profiles.active=vm
+
+# Disable InfluxDB in vm profile
+traffic:
+  influxdb:
+    enabled: false
+
+messaging:
+  type: events
