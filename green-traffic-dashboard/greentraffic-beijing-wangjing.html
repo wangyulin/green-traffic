@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenTraffic · 北京望京交通碳排放监测</title>
+<link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;background:#071522;color:#fff}
+#map{position:absolute;inset:0}
+.panel{position:absolute;z-index:10;background:rgba(5,18,30,.95);border:1px solid rgba(255,255,255,.08);border-radius:12px;backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,.22)}
+.header{left:18px;right:18px;top:14px;height:62px;padding:0 18px;display:flex;align-items:center;justify-content:space-between}
+.title{display:flex;align-items:center;gap:11px}.logo{width:38px;height:38px;border-radius:9px;background:#16c978;display:grid;place-items:center;font-size:20px}
+.t1{font-size:17px;font-weight:bold}.t2{font-size:10px;color:#8195a8;margin-top:3px}
+.status{font-size:10px;color:#8ba0b2;display:flex;gap:8px;align-items:center}.dot{width:8px;height:8px;border-radius:50%;background:#19d477;box-shadow:0 0 10px #19d477}.dot.active{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.75)}}
+.left{left:18px;top:90px;width:285px;padding:14px}.right{right:18px;top:90px;width:305px;padding:14px}
+h3{font-size:13px;margin:0 0 10px}.help{padding:10px;background:rgba(255,255,255,.035);border-radius:8px;color:#8ba0b2;font-size:10px;line-height:1.75}
+.road-list{margin-top:10px;display:grid;gap:6px;max-height:310px;overflow:auto}
+.road-btn{border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.035);color:#d7e2ea;padding:8px 9px;border-radius:7px;text-align:left;cursor:pointer;font-size:10px}
+.road-btn:hover,.road-btn.active{background:rgba(25,201,118,.11);border-color:rgba(25,201,118,.35)}
+.road-meta{color:#71879a;font-size:8px;margin-top:3px}
+.monitor{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:9px;color:#8ca1b4;font-size:9px}.state{color:#19d477;font-weight:bold}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.stat{padding:9px;border-radius:8px;background:rgba(255,255,255,.035)}.label{color:#71879a;font-size:8px}.value{margin-top:4px;font-size:16px;font-weight:bold}.unit{font-size:8px;color:#71879a;font-weight:normal}
+.carbon{margin-top:8px;padding:11px;border-radius:9px;background:rgba(25,201,118,.07);border:1px solid rgba(25,201,118,.14)}
+.carbon-title{font-size:9px;color:#8195a8}.carbon-value{font-size:24px;font-weight:bold;margin-top:3px}.level{display:inline-block;margin-top:5px;padding:4px 7px;border-radius:5px;font-size:8px;font-weight:bold}
+.low{color:#19d477;background:rgba(25,212,119,.12)}.mid{color:#f4e842;background:rgba(244,232,66,.12)}.high{color:#f4a62a;background:rgba(244,166,42,.12)}.danger{color:#ff4940;background:rgba(255,73,64,.14)}
+.chart-title{margin:11px 0 5px;color:#8195a8;font-size:9px}#chart{width:100%;height:75px;background:rgba(255,255,255,.02);border-radius:6px}
+.legend{position:absolute;z-index:10;left:325px;bottom:18px;width:255px;padding:11px}.legend-title{font-size:9px;font-weight:bold;margin-bottom:6px}.gradient{height:10px;border-radius:10px;background:linear-gradient(to right,#19c976,#a9d83d,#f4e842,#f4a62a,#f05b4f,#b40000)}.labels{display:flex;justify-content:space-between;color:#708598;font-size:8px;margin-top:4px}
+.info{margin-top:9px;padding:8px;border-radius:7px;background:rgba(255,255,255,.035);font-size:9px;color:#71879a;line-height:1.6}
+.maplibregl-popup-content{min-width:235px;padding:12px;color:#fff;background:#0b1c2d;border-radius:9px;border:1px solid rgba(255,255,255,.1)}.pop-title{font-size:13px;font-weight:bold;margin-bottom:6px}.pop-row{display:flex;justify-content:space-between;font-size:9px;line-height:1.8;color:#8195a8}.pop-v{color:#fff;font-weight:bold}
+@media(max-width:760px){.left{width:225px;left:8px}.right{width:245px;right:8px}.legend{display:none}.header{left:8px;right:8px}.t2{display:none}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="panel header">
+  <div class="title"><div class="logo">🌱</div><div><div class="t1">GreenTraffic · 望京</div><div class="t2">北京市朝阳区望京片区交通碳排放实时监测与模拟展示</div></div></div>
+  <div class="status"><span id="dot" class="dot"></span><span id="status">请选择道路</span><span id="clock"></span></div>
+</div>
+
+<div class="panel left">
+  <h3>🌍 望京重点道路</h3>
+  <div class="help">
+    本演示选取望京片区 6 条代表性道路。点击左侧道路或地图上的道路，可查看该道路附近约 600m 范围的模拟交通碳排放。
+    <br><br>数据为演示模拟数据，不代表真实车辆实时排放。
+  </div>
+  <div id="roadList" class="road-list"></div>
+  <div id="info" class="info">等待选择道路……</div>
+</div>
+
+<div class="panel right">
+  <div class="monitor"><span>当前道路实时监测</span><span id="state" class="state">未启动</span></div>
+  <div class="grid">
+    <div class="stat"><div class="label">平均 CO₂</div><div class="value"><span id="avg">--</span> <span class="unit">kg/h</span></div></div>
+    <div class="stat"><div class="label">最大 CO₂</div><div class="value"><span id="max">--</span> <span class="unit">kg/h</span></div></div>
+    <div class="stat"><div class="label">交通流量</div><div class="value"><span id="traffic">--</span> <span class="unit">辆/h</span></div></div>
+    <div class="stat"><div class="label">拥堵指数</div><div class="value"><span id="congestion">--</span></div></div>
+  </div>
+  <div class="carbon"><div class="carbon-title">当前道路区域综合排放</div><div><span id="carbon" class="carbon-value">--</span> <span class="unit">kg/h</span></div><span id="level" class="level low">等待数据</span></div>
+  <div class="chart-title">最近 60 秒 CO₂ 变化</div><canvas id="chart" width="275" height="75"></canvas>
+</div>
+
+<div class="panel legend">
+  <div class="legend-title">CO₂ 排放严重程度</div>
+  <div class="gradient"></div>
+  <div class="labels"><span>低</span><span>中</span><span>较高</span><span>高</span><span>严重</span></div>
+</div>
+
+<script>
+const ROADS = [
+  {id:"road1",name:"广顺北大街",type:"主干路",length:"约 3.6 km",center:[116.4692,40.0070],flow:[2600,5200],speed:[25,48]},
+  {id:"road2",name:"阜通东大街",type:"主干路",length:"约 2.1 km",center:[116.4760,39.9900],flow:[2200,4600],speed:[24,46]},
+  {id:"road3",name:"阜通西大街",type:"主干路",length:"约 2.0 km",center:[116.4550,39.9900],flow:[1900,4100],speed:[26,50]},
+  {id:"road4",name:"望京街",type:"次干路",length:"约 2.7 km",center:[116.4720,39.9990],flow:[1500,3500],speed:[22,45]},
+  {id:"road5",name:"湖光中街",type:"主干路",length:"约 1.3 km",center:[116.4580,40.0020],flow:[1800,3800],speed:[23,46]},
+  {id:"road6",name:"望京东路",type:"主干路",length:"约 1.1 km",center:[116.4870,39.9940],flow:[1700,3600],speed:[24,48]}
+];
+
+const map = new maplibregl.Map({
+  container:"map",
+  style:"https://tiles.openfreemap.org/styles/liberty",
+  center:[116.4705,39.9970],
+  zoom:14,
+  pitch:0,
+  bearing:0
+});
+map.addControl(new maplibregl.NavigationControl(),"bottom-right");
+
+let selected=null, timer=null, history=[], popup=null;
+
+function rnd(a,b){return a+Math.random()*(b-a)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function offset(c,x,y){
+  const lat=c[1]+y/111000;
+  const lng=c[0]+x/(111000*Math.cos(c[1]*Math.PI/180));
+  return [lng,lat];
+}
+
+function roadData(road){
+  const rush = Math.sin(Date.now()/60000);
+  const traffic = rnd(road.flow[0],road.flow[1])*(rush>.2?1.12:.88);
+  const speed = rnd(road.speed[0],road.speed[1])*(traffic>road.flow[1]*.85?.82:1);
+  const congestion=clamp(50/speed,1,4);
+  let carbon=traffic*rnd(.105,.165)*(1+(4-congestion)*.13);
+  carbon=clamp(carbon,100,900);
+  return {traffic,speed,congestion,carbon};
+}
+
+function generatePoints(road){
+  const p=[];
+  for(let i=0;i<110;i++){
+    const x=rnd(-290,290), y=rnd(-290,290);
+    const d=Math.sqrt(x*x+y*y);
+    const base=roadData(road);
+    const factor=clamp(1-d/420,.15,1.15);
+    p.push({lng:offset(road.center,x,y)[0],lat:offset(road.center,x,y)[1],
+      carbon:clamp(base.carbon*factor*rnd(.72,1.25),35,900),
+      traffic:base.traffic*factor, speed:base.speed});
+  }
+  return p;
+}
+
+function geo(points){return {type:"FeatureCollection",features:points.map(p=>({type:"Feature",properties:{carbon:p.carbon},geometry:{type:"Point",coordinates:[p.lng,p.lat]}}))}}
+
+function updateHeat(){
+  if(!selected)return;
+  const pts=generatePoints(selected);
+  map.getSource("heat").setData(geo(pts));
+  const avg=pts.reduce((s,p)=>s+p.carbon,0)/pts.length;
+  const max=Math.max(...pts.map(p=>p.carbon));
+  const traffic=pts.reduce((s,p)=>s+p.traffic,0)/pts.length;
+  const speed=pts.reduce((s,p)=>s+p.speed,0)/pts.length;
+  document.getElementById("avg").textContent=avg.toFixed(1);
+  document.getElementById("max").textContent=max.toFixed(1);
+  document.getElementById("traffic").textContent=Math.round(traffic).toLocaleString();
+  document.getElementById("congestion").textContent=clamp(50/speed,1,4).toFixed(2);
+  document.getElementById("carbon").textContent=avg.toFixed(1);
+  const level=document.getElementById("level");
+  if(avg<220){level.textContent="低排放";level.className="level low"}
+  else if(avg<380){level.textContent="中等";level.className="level mid"}
+  else if(avg<550){level.textContent="较高";level.className="level high"}
+  else{level.textContent="严重";level.className="level danger"}
+  history.push(avg); if(history.length>20)history.shift(); drawChart();
+  if(popup)popup.remove();
+  popup=new maplibregl.Popup({closeButton:false,offset:12})
+    .setLngLat(selected.center)
+    .setHTML(`<div class="pop-title">🚦 ${selected.name}</div>
+      <div class="pop-row"><span>道路等级</span><span class="pop-v">${selected.type}</span></div>
+      <div class="pop-row"><span>区域平均 CO₂</span><span class="pop-v">${avg.toFixed(1)} kg/h</span></div>
+      <div class="pop-row"><span>最高 CO₂</span><span class="pop-v">${max.toFixed(1)} kg/h</span></div>
+      <div class="pop-row"><span>交通流量</span><span class="pop-v">${Math.round(traffic).toLocaleString()} 辆/h</span></div>
+      <div style="margin-top:7px;color:#61798d;font-size:8px">模拟交通监测数据 · 每3秒更新</div>`)
+    .addTo(map);
+}
+
+function selectRoad(road){
+  selected=road; history=[];
+  document.querySelectorAll(".road-btn").forEach(x=>x.classList.toggle("active",x.dataset.id===road.id));
+  document.getElementById("state").textContent="● 实时监测";
+  document.getElementById("status").textContent="实时云图监测";
+  document.getElementById("dot").classList.add("active");
+  document.getElementById("info").innerHTML=`<b style="color:#d7e2ea">${road.name}</b><br>道路类型：${road.type}<br>道路长度：${road.length}<br>监测范围：道路中心约 600m × 600m`;
+  map.flyTo({center:road.center,zoom:15,duration:800});
+  if(!map.getSource("heat")){
+    map.addSource("heat",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
+    map.addLayer({id:"heatmap",type:"heatmap",source:"heat",maxzoom:18,paint:{
+      "heatmap-weight":["interpolate",["linear"],["get","carbon"],35,0.05,200,0.25,400,0.55,600,0.85,900,1.2],
+      "heatmap-intensity":["interpolate",["linear"],["zoom"],11,.7,13,1,15,1.4,17,1.8],
+      "heatmap-radius":["interpolate",["linear"],["zoom"],11,18,13,28,15,42,17,58],
+      "heatmap-color":["interpolate",["linear"],["heatmap-density"],0,"rgba(0,0,0,0)",.12,"#19c976",.28,"#a9d83d",.45,"#f4e842",.60,"#f4a62a",.75,"#f05b4f",.90,"#d62828",1,"#8b0000"],
+      "heatmap-opacity":["interpolate",["linear"],["zoom"],11,.45,13,.58,15,.68,17,.75]
+    }});
+  }
+  updateHeat();
+  clearInterval(timer); timer=setInterval(updateHeat,3000);
+}
+
+const list=document.getElementById("roadList");
+ROADS.forEach(r=>{
+  const b=document.createElement("button"); b.className="road-btn"; b.dataset.id=r.id;
+  b.innerHTML=`${r.name}<div class="road-meta">${r.type} · ${r.length}</div>`;
+  b.onclick=()=>selectRoad(r); list.appendChild(b);
+});
+
+ROADS.forEach(r=>{
+  new maplibregl.Marker({color:"#19c978"}).setLngLat(r.center).setPopup(
+    new maplibregl.Popup({offset:12}).setHTML(`<b>${r.name}</b><br><small>${r.type} · 点击查看模拟排放</small>`)
+  ).addTo(map);
+});
+
+map.on("load",()=>drawChart());
+map.on("click",e=>{
+  let nearest=ROADS.map(r=>({r,d:Math.hypot((e.lngLat.lng-r.center[0])*85000,(e.lngLat.lat-r.center[1])*111000)})).sort((a,b)=>a.d-b.d)[0];
+  if(nearest.d<900)selectRoad(nearest.r);
+});
+
+function drawChart(){
+  const c=document.getElementById("chart"),ctx=c.getContext("2d"),w=c.width,h=c.height;
+  ctx.clearRect(0,0,w,h); if(!history.length)return;
+  const min=Math.min(...history),max=Math.max(...history)+1,p=8;
+  ctx.strokeStyle="rgba(255,255,255,.05)";ctx.lineWidth=1;
+  for(let i=1;i<=3;i++){let y=p+(h-2*p)*i/4;ctx.beginPath();ctx.moveTo(p,y);ctx.lineTo(w-p,y);ctx.stroke()}
+  ctx.beginPath();
+  history.forEach((v,i)=>{let x=p+i/(Math.max(1,history.length-1))*(w-2*p),y=p+(1-(v-min)/(max-min))*(h-2*p);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+  ctx.strokeStyle="#19d477";ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle="#8ca1b3";ctx.font="9px Arial";ctx.textAlign="right";ctx.fillText(history.at(-1).toFixed(1)+" kg/h",w-p,10);
+}
+function clock(){document.getElementById("clock").textContent=new Date().toLocaleTimeString("zh-CN",{hour12:false})}
+setInterval(clock,1000);clock();
+</script>
+</body>
+</html>

@@ -1,0 +1,2269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+<title>GreenTraffic - 榆中县交通碳排放实时监测</title>
+<link
+    href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css"
+    rel="stylesheet">
+<script
+    src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js">
+</script>
+<style>
+/* =========================================================
+   基础
+========================================================= */
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family:
+        "Microsoft YaHei",
+        "PingFang SC",
+        Arial,
+        sans-serif;
+    background: #071522;
+    color: white;
+}
+/* =========================================================
+   地图
+========================================================= */
+#map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+/* =========================================================
+   顶部
+========================================================= */
+.header {
+    position: absolute;
+    z-index: 100;
+    left: 20px;
+    right: 20px;
+    top: 15px;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-radius: 12px;
+    background: rgba(5, 18, 30, 0.94);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+}
+.title-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.logo {
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: #16c978;
+    font-size: 20px;
+}
+.title {
+    font-size: 17px;
+    font-weight: bold;
+}
+.subtitle {
+    margin-top: 3px;
+    color: #8195a8;
+    font-size: 10px;
+}
+.status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8ba0b2;
+    font-size: 10px;
+}
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #19d477;
+    box-shadow: 0 0 10px #19d477;
+}
+.status-dot.active {
+    animation: statusPulse 1.2s infinite;
+}
+@keyframes statusPulse {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: .35;
+        transform: scale(.75);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+/* =========================================================
+   左侧
+========================================================= */
+.left-panel {
+    position: absolute;
+    z-index: 100;
+    left: 20px;
+    top: 95px;
+    width: 285px;
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(5,18,30,0.94);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+}
+.panel-title {
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.help {
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.035);
+    color: #8ba0b2;
+    font-size: 10px;
+    line-height: 1.8;
+}
+.road-info {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(25,201,118,0.07);
+    border: 1px solid rgba(25,201,118,0.15);
+}
+.road-name {
+    font-size: 13px;
+    font-weight: bold;
+}
+.road-detail {
+    margin-top: 5px;
+    color: #8195a8;
+    font-size: 9px;
+    line-height: 1.8;
+}
+.message {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.035);
+    color: #6f8598;
+    font-size: 9px;
+    line-height: 1.6;
+}
+/* =========================================================
+   右侧
+========================================================= */
+.right-panel {
+    position: absolute;
+    z-index: 100;
+    right: 20px;
+    top: 95px;
+    width: 300px;
+    padding: 15px;
+    border-radius: 12px;
+    background: rgba(5,18,30,0.95);
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+}
+.monitor-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: #8ca1b4;
+    font-size: 9px;
+}
+.monitor-state {
+    color: #19d477;
+    font-weight: bold;
+}
+.stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+.stat {
+    padding: 9px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.035);
+}
+.stat-label {
+    color: #71879a;
+    font-size: 8px;
+}
+.stat-value {
+    margin-top: 5px;
+    font-size: 17px;
+    font-weight: bold;
+}
+.stat-unit {
+    color: #71879a;
+    font-size: 8px;
+    font-weight: normal;
+}
+.carbon-card {
+    margin-top: 9px;
+    padding: 12px;
+    border-radius: 9px;
+    background: rgba(25,201,118,0.07);
+    border: 1px solid rgba(25,201,118,0.14);
+}
+.carbon-title {
+    color: #8195a8;
+    font-size: 9px;
+}
+.carbon-value {
+    margin-top: 3px;
+    font-size: 25px;
+    font-weight: bold;
+}
+.carbon-unit {
+    color: #71879a;
+    font-size: 9px;
+}
+.level {
+    display: inline-block;
+    margin-top: 5px;
+    padding: 4px 7px;
+    border-radius: 5px;
+    font-size: 8px;
+    font-weight: bold;
+}
+.level-low {
+    color: #19d477;
+    background: rgba(25,212,119,0.12);
+}
+.level-medium {
+    color: #f4e842;
+    background: rgba(244,232,66,0.12);
+}
+.level-high {
+    color: #f4a62a;
+    background: rgba(244,166,42,0.12);
+}
+.level-danger {
+    color: #ff4940;
+    background: rgba(255,73,64,0.14);
+}
+/* =========================================================
+   趋势图
+========================================================= */
+.chart-title {
+    margin-top: 12px;
+    margin-bottom: 5px;
+    color: #8195a8;
+    font-size: 9px;
+}
+#chart {
+    width: 100%;
+    height: 75px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+}
+/* =========================================================
+   图例
+========================================================= */
+.legend {
+    position: absolute;
+    z-index: 100;
+    left: 330px;
+    bottom: 20px;
+    width: 255px;
+    padding: 12px;
+    border-radius: 9px;
+    background: rgba(5,18,30,0.95);
+    border: 1px solid rgba(255,255,255,0.07);
+}
+.legend-title {
+    margin-bottom: 7px;
+    font-size: 9px;
+    font-weight: bold;
+}
+.gradient {
+    width: 100%;
+    height: 10px;
+    border-radius: 10px;
+    background:
+        linear-gradient(
+            to right,
+            #19c976,
+            #a9d83d,
+            #f4e842,
+            #f4a62a,
+            #f05b4f,
+            #b40000
+        );
+}
+.legend-label {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    color: #708598;
+    font-size: 8px;
+}
+/* =========================================================
+   Popup
+========================================================= */
+.maplibregl-popup-content {
+    min-width: 230px;
+    padding: 13px;
+    color: white;
+    background: #0b1c2d;
+    border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.popup-title {
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: bold;
+}
+.popup-row {
+    display: flex;
+    justify-content: space-between;
+    line-height: 1.8;
+    color: #8195a8;
+    font-size: 9px;
+}
+.popup-value {
+    color: white;
+    font-weight: bold;
+}
+/* =========================================================
+   点击范围提示
+========================================================= */
+.monitor-radius {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    pointer-events: none;
+}
+/* =========================================================
+   手机
+========================================================= */
+@media(max-width:700px) {
+    .left-panel {
+        left: 10px;
+        width: 230px;
+    }
+    .right-panel {
+        right: 10px;
+        width: 240px;
+        top: auto;
+        bottom: 10px;
+    }
+    .legend {
+        display: none;
+    }
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<!-- =====================================================
+     顶部
+===================================================== -->
+<div class="header">
+    <div class="title-box">
+        <div class="logo">
+            🌱
+        </div>
+        <div>
+            <div class="title">
+                GreenTraffic
+            </div>
+            <div class="subtitle">
+                兰州市榆中县城区交通碳排放实时监测与优化系统
+            </div>
+        </div>
+    </div>
+    <div class="status">
+        <span
+            id="statusDot"
+            class="status-dot">
+        </span>
+        <span id="statusText">
+            点击道路开始监测
+        </span>
+        <span id="clock">
+        </span>
+    </div>
+</div>
+<!-- =====================================================
+     左侧
+===================================================== -->
+<div class="left-panel">
+    <div class="panel-title">
+        🌍 交通碳排放实时云图
+    </div>
+    <div class="help">
+        点击地图中的真实道路。
+        <br><br>
+        系统只会查询
+        <b>当前点击位置附近</b>
+        的 OSM 道路。
+        <br><br>
+        查询成功后，以该道路为中心生成
+        <b>约 600m × 600m</b>
+        的局部交通碳排放区域。
+        <br><br>
+        每 <b>3 秒</b>
+        更新一批模拟交通数据。
+        <br><br>
+        <span style="color:#19d477;">
+            注意：未点击区域不会生成云图。
+        </span>
+    </div>
+    <div
+        id="roadInfo"
+        class="road-info">
+        <div
+            id="roadName"
+            class="road-name">
+        </div>
+        <div
+            id="roadDetail"
+            class="road-detail">
+        </div>
+    </div>
+    <div
+        id="message"
+        class="message">
+        等待点击道路……
+    </div>
+</div>
+<!-- =====================================================
+     右侧
+===================================================== -->
+<div class="right-panel">
+    <div class="monitor-title">
+        <span>
+            当前区域实时监测
+        </span>
+        <span
+            id="monitorState"
+            class="monitor-state">
+            未启动
+        </span>
+    </div>
+    <div class="stat-grid">
+        <div class="stat">
+            <div class="stat-label">
+                平均 CO₂
+            </div>
+            <div class="stat-value">
+                <span id="avgCarbon">
+                    --
+                </span>
+                <span class="stat-unit">
+                    kg/h
+                </span>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">
+                最大 CO₂
+            </div>
+            <div class="stat-value">
+                <span id="maxCarbon">
+                    --
+                </span>
+                <span class="stat-unit">
+                    kg/h
+                </span>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">
+                交通流量
+            </div>
+            <div class="stat-value">
+                <span id="traffic">
+                    --
+                </span>
+                <span class="stat-unit">
+                    辆/h
+                </span>
+            </div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">
+                拥堵指数
+            </div>
+            <div class="stat-value">
+                <span id="congestion">
+                    --
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="carbon-card">
+        <div class="carbon-title">
+            当前区域综合排放
+        </div>
+        <div>
+            <span
+                id="carbon"
+                class="carbon-value">
+                --
+            </span>
+            <span class="carbon-unit">
+                kg/h
+            </span>
+        </div>
+        <div
+            id="level"
+            class="level level-low">
+            等待数据
+        </div>
+    </div>
+    <div class="chart-title">
+        最近 60 秒 CO₂ 变化
+    </div>
+    <canvas
+        id="chart"
+        width="270"
+        height="75">
+    </canvas>
+</div>
+<!-- =====================================================
+     图例
+===================================================== -->
+<div class="legend">
+    <div class="legend-title">
+        CO₂ 排放严重程度
+    </div>
+    <div class="gradient"></div>
+    <div class="legend-label">
+        <span>低</span>
+        <span>中</span>
+        <span>较高</span>
+        <span>高</span>
+        <span>严重</span>
+    </div>
+</div>
+<script>
+/* =========================================================
+   GreenTraffic
+   MapLibre + OpenFreeMap + OpenStreetMap
+   核心逻辑：
+   1. 页面加载只加载地图
+   2. 用户点击地图
+   3. 点击位置附近查询真实 OSM 道路
+   4. 获取道路 geometry
+   5. 只围绕当前道路生成碳排放点
+   6. 每 3 秒重新生成
+========================================================= */
+/* =========================================================
+   1. 地图
+========================================================= */
+const map = new maplibregl.Map({
+    container: "map",
+    style:
+        "https://tiles.openfreemap.org/styles/liberty",
+    center: [
+        104.112,
+        35.844
+    ],
+    zoom: 13,
+    pitch: 0,
+    bearing: 0
+});
+map.addControl(
+    new maplibregl.NavigationControl(),
+    "bottom-right"
+);
+/* =========================================================
+   2. Overpass
+========================================================= */
+const OVERPASS_SERVERS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter"
+];
+/* =========================================================
+   3. 全局状态
+========================================================= */
+let selectedLng = null;
+let selectedLat = null;
+let selectedRoad = null;
+let selectedRoadCoordinates = [];
+let monitorTimer = null;
+let selectedMarker = null;
+let selectedPopup = null;
+let history = [];
+let isQuerying = false;
+/*
+ * 当前云图半径
+ *
+ * 约 300 米
+ *
+ * 所以整个范围大约
+ *
+ * 600m × 600m
+ */
+const CLOUD_RADIUS_METERS = 300;
+/*
+ * 道路附近数据
+ *
+ * 越靠近道路，
+ * 数据密度越高。
+ */
+const ROAD_SPREAD_METERS = 90;
+/* =========================================================
+   4. 工具
+========================================================= */
+function random(min, max) {
+    return min +
+        Math.random() *
+        (max - min);
+}
+function clamp(value, min, max) {
+    return Math.max(
+        min,
+        Math.min(max, value)
+    );
+}
+/* =========================================================
+   5. 经纬度偏移
+========================================================= */
+function offsetLngLat(
+    lng,
+    lat,
+    xMeter,
+    yMeter
+) {
+    const latOffset =
+        yMeter / 111000;
+    const lngOffset =
+        xMeter /
+        (
+            111000 *
+            Math.cos(
+                lat *
+                Math.PI /
+                180
+            )
+        );
+    return [
+        lng + lngOffset,
+        lat + latOffset
+    ];
+}
+/* =========================================================
+   6. 距离
+========================================================= */
+function distanceMeters(
+    lng1,
+    lat1,
+    lng2,
+    lat2
+) {
+    const R = 6371000;
+    const rad =
+        Math.PI / 180;
+    const dLat =
+        (lat2 - lat1) * rad;
+    const dLng =
+        (lng2 - lng1) * rad;
+    const a =
+        Math.sin(dLat / 2) *
+        Math.sin(dLat / 2)
+        +
+        Math.cos(lat1 * rad) *
+        Math.cos(lat2 * rad) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    return R *
+        2 *
+        Math.atan2(
+            Math.sqrt(a),
+            Math.sqrt(1 - a)
+        );
+}
+/* =========================================================
+   7. 点到道路的距离
+========================================================= */
+function distanceToRoad(
+    lng,
+    lat
+) {
+    if (
+        selectedRoadCoordinates.length === 0
+    ) {
+        return Infinity;
+    }
+    let minDistance =
+        Infinity;
+    for (
+        const coordinate
+        of selectedRoadCoordinates
+    ) {
+        const d =
+            distanceMeters(
+                lng,
+                lat,
+                coordinate[0],
+                coordinate[1]
+            );
+        if (
+            d < minDistance
+        ) {
+            minDistance = d;
+        }
+    }
+    return minDistance;
+}
+/* =========================================================
+   8. Overpass
+========================================================= */
+async function fetchOverpass(query) {
+    let lastError = null;
+    for (
+        const server
+        of OVERPASS_SERVERS
+    ) {
+        try {
+            console.log(
+                "正在请求：",
+                server
+            );
+            const controller =
+                new AbortController();
+            const timeout =
+                setTimeout(
+                    function() {
+                        controller.abort();
+                    },
+                    12000
+                );
+            const response =
+                await fetch(
+                    server,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/x-www-form-urlencoded"
+                        },
+                        body:
+                            "data=" +
+                            encodeURIComponent(query),
+                        signal:
+                            controller.signal
+                    }
+                );
+            clearTimeout(timeout);
+            if (!response.ok) {
+                throw new Error(
+                    "HTTP " +
+                    response.status
+                );
+            }
+            const text =
+                await response.text();
+            if (!text.trim()) {
+                throw new Error(
+                    "Overpass 返回空数据"
+                );
+            }
+            return JSON.parse(text);
+        }
+        catch (error) {
+            console.warn(
+                "Overpass 节点失败：",
+                server,
+                error
+            );
+            lastError =
+                error;
+        }
+    }
+    throw lastError ||
+        new Error(
+            "所有 Overpass 节点均不可用"
+        );
+}
+/* =========================================================
+   9. 查询附近道路
+========================================================= */
+function createRoadQuery(
+    lng,
+    lat
+) {
+    return `
+[out:json][timeout:12];
+way
+(around:80,${lat},${lng})
+["highway"]
+["highway"!~"footway|path|cycleway|steps|pedestrian|track|service|construction|bridleway"];
+out tags center;
+`;
+}
+/* =========================================================
+   10. 获取道路 geometry
+========================================================= */
+function createGeometryQuery(
+    wayId
+) {
+    return `
+[out:json][timeout:12];
+way(${wayId});
+out tags geom;
+`;
+}
+/* =========================================================
+   11. 查找最近道路
+========================================================= */
+function findNearestRoad(
+    elements,
+    lng,
+    lat
+) {
+    let nearest = null;
+    let nearestDistance =
+        Infinity;
+    for (
+        const item
+        of elements
+    ) {
+        if (!item.center) {
+            continue;
+        }
+        const distance =
+            distanceMeters(
+                lng,
+                lat,
+                item.center.lon,
+                item.center.lat
+            );
+        if (
+            distance <
+            nearestDistance
+        ) {
+            nearest =
+                item;
+            nearestDistance =
+                distance;
+        }
+    }
+    return {
+        road:
+            nearest,
+        distance:
+            nearestDistance
+    };
+}
+/* =========================================================
+   12. 清理旧数据
+========================================================= */
+function clearMonitoring() {
+    if (
+        monitorTimer !== null
+    ) {
+        clearInterval(
+            monitorTimer
+        );
+        monitorTimer = null;
+    }
+    if (selectedMarker) {
+        selectedMarker.remove();
+        selectedMarker = null;
+    }
+    if (selectedPopup) {
+        selectedPopup.remove();
+        selectedPopup = null;
+    }
+    if (
+        map.getLayer(
+            "selected-road-glow"
+        )
+    ) {
+        map.removeLayer(
+            "selected-road-glow"
+        );
+    }
+    if (
+        map.getLayer(
+            "selected-road"
+        )
+    ) {
+        map.removeLayer(
+            "selected-road"
+        );
+    }
+    if (
+        map.getSource(
+            "selected-road"
+        )
+    ) {
+        map.removeSource(
+            "selected-road"
+        );
+    }
+    if (
+        map.getLayer(
+            "carbon-heatmap"
+        )
+    ) {
+        map.removeLayer(
+            "carbon-heatmap"
+        );
+    }
+    if (
+        map.getSource(
+            "carbon-heat"
+        )
+    ) {
+        map.removeSource(
+            "carbon-heat"
+        );
+    }
+    history = [];
+}
+/* =========================================================
+   13. 显示真实道路
+========================================================= */
+function showSelectedRoad(road) {
+    const coordinates =
+        road.geometry.map(
+            function(point) {
+                return [
+                    point.lon,
+                    point.lat
+                ];
+            }
+        );
+    selectedRoadCoordinates =
+        coordinates;
+    const geojson = {
+        type: "Feature",
+        geometry: {
+            type: "LineString",
+            coordinates:
+                coordinates
+        },
+        properties: {}
+    };
+    map.addSource(
+        "selected-road",
+        {
+            type: "geojson",
+            data:
+                geojson
+        }
+    );
+    map.addLayer({
+        id:
+            "selected-road-glow",
+        type:
+            "line",
+        source:
+            "selected-road",
+        paint: {
+            "line-color":
+                "#00eaff",
+            "line-width":
+                12,
+            "line-opacity":
+                0.20,
+            "line-blur":
+                3
+        }
+    });
+    map.addLayer({
+        id:
+            "selected-road",
+        type:
+            "line",
+        source:
+            "selected-road",
+        paint: {
+            "line-color":
+                "#00eaff",
+            "line-width":
+                4,
+            "line-opacity":
+                0.95
+        }
+    });
+}
+/* =========================================================
+   14. Marker
+========================================================= */
+function createSelectedMarker(
+    lng,
+    lat
+) {
+    const element =
+        document.createElement(
+            "div"
+        );
+    element.style.width =
+        "15px";
+    element.style.height =
+        "15px";
+    element.style.borderRadius =
+        "50%";
+    element.style.background =
+        "#ffffff";
+    element.style.border =
+        "3px solid #00eaff";
+    element.style.boxShadow =
+        "0 0 16px #00eaff";
+    selectedMarker =
+        new maplibregl.Marker({
+            element:
+                element
+        })
+        .setLngLat([
+            lng,
+            lat
+        ])
+        .addTo(map);
+}
+/* =========================================================
+   15. 在道路上随机选择一个位置
+========================================================= */
+function randomRoadPosition() {
+    if (
+        selectedRoadCoordinates.length === 0
+    ) {
+        return [
+            selectedLng,
+            selectedLat
+        ];
+    }
+    const index =
+        Math.floor(
+            Math.random() *
+            selectedRoadCoordinates.length
+        );
+    return selectedRoadCoordinates[
+        index
+    ];
+}
+/* =========================================================
+   16. 创建一个交通数据点
+========================================================= */
+function createTrafficPoint(
+    lng,
+    lat,
+    roadDistance
+) {
+    /*
+     * 距离道路越近，
+     * 交通影响越明显。
+     */
+    const roadFactor =
+        clamp(
+            1 -
+            roadDistance /
+            CLOUD_RADIUS_METERS,
+            0,
+            1
+        );
+    /*
+     * 基础交通流量
+     */
+    let traffic =
+        random(
+            250,
+            1800
+        );
+    /*
+     * 道路附近流量提高
+     */
+    traffic *=
+        0.7 +
+        roadFactor * 1.1;
+    /*
+     * 速度
+     */
+    let speed =
+        random(
+            20,
+            55
+        );
+    /*
+     * 道路附近拥堵更明显
+     */
+    if (
+        roadFactor > 0.7
+    ) {
+        speed =
+            random(
+                15,
+                42
+            );
+    }
+    /*
+     * CO2
+     */
+    let carbon =
+        traffic *
+        random(
+            0.09,
+            0.20
+        );
+    /*
+     * 距离道路影响
+     */
+    carbon *=
+        0.55 +
+        roadFactor * 1.25;
+    /*
+     * 低速增加排放
+     */
+    if (
+        speed < 25
+    ) {
+        carbon *=
+            random(
+                1.15,
+                1.45
+            );
+    }
+    /*
+     * 模拟实时波动
+     */
+    carbon *=
+        random(
+            0.85,
+            1.18
+        );
+    carbon =
+        clamp(
+            carbon,
+            20,
+            900
+        );
+    const severity =
+        clamp(
+            (
+                carbon - 20
+            ) /
+            880,
+            0,
+            1
+        );
+    return {
+        lng:
+            lng,
+        lat:
+            lat,
+        traffic:
+            traffic,
+        speed:
+            speed,
+        carbon:
+            carbon,
+        severity:
+            severity
+    };
+}
+/* =========================================================
+   17. 生成局部云图数据
+========================================================= */
+function generateTrafficData() {
+    const points = [];
+    /*
+     * 普通监测点
+     *
+     * 只在当前点击位置
+     * 附近生成。
+     */
+    const count = 120;
+    for (
+        let i = 0;
+        i < count;
+        i++
+    ) {
+        /*
+         * 约 75% 的点
+         * 从道路附近产生。
+         */
+        if (
+            Math.random() < 0.75 &&
+            selectedRoadCoordinates.length > 0
+        ) {
+            const roadPoint =
+                randomRoadPosition();
+            /*
+             * 横向扩散
+             *
+             * 主要在道路两侧
+             */
+            const offsetX =
+                random(
+                    -ROAD_SPREAD_METERS,
+                    ROAD_SPREAD_METERS
+                );
+            const offsetY =
+                random(
+                    -ROAD_SPREAD_METERS,
+                    ROAD_SPREAD_METERS
+                );
+            const position =
+                offsetLngLat(
+                    roadPoint[0],
+                    roadPoint[1],
+                    offsetX,
+                    offsetY
+                );
+            const roadDistance =
+                distanceToRoad(
+                    position[0],
+                    position[1]
+                );
+            /*
+             * 如果超出云图范围，
+             * 放弃这个点。
+             */
+            if (
+                roadDistance >
+                CLOUD_RADIUS_METERS
+            ) {
+                i--;
+                continue;
+            }
+            points.push(
+                createTrafficPoint(
+                    position[0],
+                    position[1],
+                    roadDistance
+                )
+            );
+        }
+        else {
+            /*
+             * 其余少量点
+             *
+             * 仍然限制在
+             * 当前点击点附近。
+             */
+            const angle =
+                random(
+                    0,
+                    Math.PI * 2
+                );
+            const radius =
+                Math.sqrt(
+                    Math.random()
+                ) *
+                CLOUD_RADIUS_METERS;
+            const x =
+                Math.cos(angle) *
+                radius;
+            const y =
+                Math.sin(angle) *
+                radius;
+            const position =
+                offsetLngLat(
+                    selectedLng,
+                    selectedLat,
+                    x,
+                    y
+                );
+            const roadDistance =
+                distanceToRoad(
+                    position[0],
+                    position[1]
+                );
+            points.push(
+                createTrafficPoint(
+                    position[0],
+                    position[1],
+                    roadDistance
+                )
+            );
+        }
+    }
+    /*
+     * 额外热点
+     *
+     * 热点也必须靠近道路。
+     */
+    for (
+        let i = 0;
+        i < 8;
+        i++
+    ) {
+        if (
+            selectedRoadCoordinates.length === 0
+        ) {
+            break;
+        }
+        const roadPoint =
+            randomRoadPosition();
+        const x =
+            random(
+                -60,
+                60
+            );
+        const y =
+            random(
+                -60,
+                60
+            );
+        const position =
+            offsetLngLat(
+                roadPoint[0],
+                roadPoint[1],
+                x,
+                y
+            );
+        const traffic =
+            random(
+                1800,
+                3200
+            );
+        const carbon =
+            random(
+                550,
+                900
+            );
+        points.push({
+            lng:
+                position[0],
+            lat:
+                position[1],
+            traffic:
+                traffic,
+            speed:
+                random(
+                    10,
+                    25
+                ),
+            carbon:
+                carbon,
+            severity:
+                clamp(
+                    (
+                        carbon - 20
+                    ) /
+                    880,
+                    0,
+                    1
+                )
+        });
+    }
+    return points;
+}
+/* =========================================================
+   18. GeoJSON
+========================================================= */
+function trafficToGeoJSON(points) {
+    return {
+        type:
+            "FeatureCollection",
+        features:
+            points.map(
+                function(point) {
+                    return {
+                        type:
+                            "Feature",
+                        properties: {
+                            carbon:
+                                point.carbon,
+                            severity:
+                                point.severity,
+                            traffic:
+                                point.traffic,
+                            speed:
+                                point.speed
+                        },
+                        geometry: {
+                            type:
+                                "Point",
+                            coordinates: [
+                                point.lng,
+                                point.lat
+                            ]
+                        }
+                    };
+                }
+            )
+    };
+}
+/* =========================================================
+   19. 创建热力图
+========================================================= */
+function createHeatmap(points) {
+    map.addSource(
+        "carbon-heat",
+        {
+            type:
+                "geojson",
+            data:
+                trafficToGeoJSON(
+                    points
+                )
+        }
+    );
+    map.addLayer({
+        id:
+            "carbon-heatmap",
+        type:
+            "heatmap",
+        source:
+            "carbon-heat",
+        maxzoom:
+            18,
+        paint: {
+            /*
+             * 数据权重
+             */
+            "heatmap-weight": [
+                "interpolate",
+                ["linear"],
+                ["get", "severity"],
+                0,
+                0.08,
+                0.2,
+                0.25,
+                0.4,
+                0.45,
+                0.6,
+                0.68,
+                0.8,
+                0.90,
+                1,
+                1.30
+            ],
+            /*
+             * 热力强度
+             */
+            "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                11,
+                0.7,
+                13,
+                1.0,
+                15,
+                1.4,
+                17,
+                1.8
+            ],
+            /*
+             * 关键：
+             * 半径不要太大
+             *
+             * 避免整张地图
+             * 被染色。
+             */
+            "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                11,
+                18,
+                12,
+                24,
+                13,
+                30,
+                14,
+                38,
+                15,
+                45,
+                16,
+                52,
+                17,
+                60
+            ],
+            /*
+             * 颜色
+             */
+            "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+                0,
+                "rgba(0,0,0,0)",
+                0.12,
+                "#19c976",
+                0.28,
+                "#a9d83d",
+                0.45,
+                "#f4e842",
+                0.60,
+                "#f4a62a",
+                0.75,
+                "#f05b4f",
+                0.90,
+                "#d62828",
+                1,
+                "#8b0000"
+            ],
+            /*
+             * 透明度
+             */
+            "heatmap-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                11,
+                0.45,
+                13,
+                0.58,
+                15,
+                0.68,
+                17,
+                0.75
+            ]
+        }
+    });
+}
+/* =========================================================
+   20. 更新热力图
+========================================================= */
+function updateHeatmap() {
+    if (
+        selectedLng === null ||
+        selectedLat === null ||
+        !selectedRoad
+    ) {
+        return;
+    }
+    const points =
+        generateTrafficData();
+    const source =
+        map.getSource(
+            "carbon-heat"
+        );
+    if (source) {
+        source.setData(
+            trafficToGeoJSON(
+                points
+            )
+        );
+    }
+    updateStatistics(
+        points
+    );
+    const average =
+        calculateAverageCarbon(
+            points
+        );
+    history.push(
+        average
+    );
+    if (
+        history.length > 20
+    ) {
+        history.shift();
+    }
+    drawChart();
+    updatePopup(
+        points
+    );
+}
+/* =========================================================
+   21. 平均值
+========================================================= */
+function calculateAverageCarbon(
+    points
+) {
+    if (
+        points.length === 0
+    ) {
+        return 0;
+    }
+    let total = 0;
+    for (
+        const point
+        of points
+    ) {
+        total +=
+            point.carbon;
+    }
+    return (
+        total /
+        points.length
+    );
+}
+/* =========================================================
+   22. 统计
+========================================================= */
+function updateStatistics(
+    points
+) {
+    if (
+        points.length === 0
+    ) {
+        return;
+    }
+    let totalCarbon = 0;
+    let maxCarbon = 0;
+    let totalTraffic = 0;
+    let totalCongestion = 0;
+    for (
+        const point
+        of points
+    ) {
+        totalCarbon +=
+            point.carbon;
+        maxCarbon =
+            Math.max(
+                maxCarbon,
+                point.carbon
+            );
+        totalTraffic +=
+            point.traffic;
+        const congestion =
+            clamp(
+                50 /
+                point.speed,
+                1,
+                4
+            );
+        totalCongestion +=
+            congestion;
+    }
+    const average =
+        totalCarbon /
+        points.length;
+    const averageCongestion =
+        totalCongestion /
+        points.length;
+    document.getElementById(
+        "avgCarbon"
+    ).innerText =
+        average.toFixed(1);
+    document.getElementById(
+        "maxCarbon"
+    ).innerText =
+        maxCarbon.toFixed(1);
+    document.getElementById(
+        "traffic"
+    ).innerText =
+        Math.round(
+            totalTraffic
+        ).toLocaleString();
+    document.getElementById(
+        "congestion"
+    ).innerText =
+        averageCongestion.toFixed(2);
+    document.getElementById(
+        "carbon"
+    ).innerText =
+        average.toFixed(1);
+    updateLevel(
+        average
+    );
+}
+/* =========================================================
+   23. 排放等级
+========================================================= */
+function updateLevel(
+    carbon
+) {
+    const element =
+        document.getElementById(
+            "level"
+        );
+    if (
+        carbon < 220
+    ) {
+        element.innerText =
+            "低排放";
+        element.className =
+            "level level-low";
+    }
+    else if (
+        carbon < 380
+    ) {
+        element.innerText =
+            "中等";
+        element.className =
+            "level level-medium";
+    }
+    else if (
+        carbon < 550
+    ) {
+        element.innerText =
+            "较高";
+        element.className =
+            "level level-high";
+    }
+    else {
+        element.innerText =
+            "严重";
+        element.className =
+            "level level-danger";
+    }
+}
+/* =========================================================
+   24. Popup
+========================================================= */
+function createPopup(
+    road,
+    points
+) {
+    if (selectedPopup) {
+        selectedPopup.remove();
+    }
+    const average =
+        calculateAverageCarbon(
+            points
+        );
+    let max =
+        0;
+    for (
+        const point
+        of points
+    ) {
+        max =
+            Math.max(
+                max,
+                point.carbon
+            );
+    }
+    const roadName =
+        road.tags &&
+        road.tags.name
+            ? road.tags.name
+            : "未命名道路";
+    selectedPopup =
+        new maplibregl.Popup({
+            offset: 12,
+            closeButton: false
+        })
+        .setLngLat([
+            selectedLng,
+            selectedLat
+        ])
+        .setHTML(`
+            <div class="popup-title">
+                🚦 ${roadName}
+            </div>
+            <div class="popup-row">
+                <span>OSM Way</span>
+                <span class="popup-value">
+                    ${road.id}
+                </span>
+            </div>
+            <div class="popup-row">
+                <span>平均 CO₂</span>
+                <span class="popup-value">
+                    ${average.toFixed(1)} kg/h
+                </span>
+            </div>
+            <div class="popup-row">
+                <span>最高 CO₂</span>
+                <span class="popup-value">
+                    ${max.toFixed(1)} kg/h
+                </span>
+            </div>
+            <div
+                style="
+                    margin-top:7px;
+                    color:#61798d;
+                    font-size:8px;
+                "
+            >
+                模拟交通监测数据 · 每3秒更新
+            </div>
+        `)
+        .addTo(map);
+}
+/* =========================================================
+   25. 更新 Popup
+========================================================= */
+function updatePopup(points) {
+    if (!selectedRoad) {
+        return;
+    }
+    createPopup(
+        selectedRoad,
+        points
+    );
+}
+/* =========================================================
+   26. 开始监测
+========================================================= */
+function startMonitoring(
+    road
+) {
+    const firstBatch =
+        generateTrafficData();
+    createHeatmap(
+        firstBatch
+    );
+    updateStatistics(
+        firstBatch
+    );
+    history = [
+        calculateAverageCarbon(
+            firstBatch
+        )
+    ];
+    drawChart();
+    createPopup(
+        road,
+        firstBatch
+    );
+    document.getElementById(
+        "monitorState"
+    ).innerText =
+        "● 实时监测";
+    document.getElementById(
+        "statusText"
+    ).innerText =
+        "实时云图监测";
+    document.getElementById(
+        "statusDot"
+    ).classList.add(
+        "active"
+    );
+    monitorTimer =
+        setInterval(
+            function() {
+                updateHeatmap();
+            },
+            3000
+        );
+}
+/* =========================================================
+   27. 地图点击
+========================================================= */
+map.on(
+    "click",
+    async function(event) {
+        if (isQuerying) {
+            return;
+        }
+        isQuerying = true;
+        selectedLng =
+            event.lngLat.lng;
+        selectedLat =
+            event.lngLat.lat;
+        /*
+         * 清理之前的数据
+         */
+        clearMonitoring();
+        /*
+         * 重置道路
+         */
+        selectedRoad = null;
+        selectedRoadCoordinates = [];
+        /*
+         * 点击点
+         */
+        createSelectedMarker(
+            selectedLng,
+            selectedLat
+        );
+        document.getElementById(
+            "message"
+        ).innerText =
+            "① 正在查询点击位置附近真实道路……";
+        try {
+            /*
+             * 查询附近道路
+             */
+            const nearbyData =
+                await fetchOverpass(
+                    createRoadQuery(
+                        selectedLng,
+                        selectedLat
+                    )
+                );
+            if (
+                !nearbyData.elements ||
+                nearbyData.elements.length === 0
+            ) {
+                throw new Error(
+                    "点击位置附近没有找到机动车道路"
+                );
+            }
+            /*
+             * 找最近道路
+             */
+            const result =
+                findNearestRoad(
+                    nearbyData.elements,
+                    selectedLng,
+                    selectedLat
+                );
+            if (!result.road) {
+                throw new Error(
+                    "没有找到有效道路"
+                );
+            }
+            document.getElementById(
+                "message"
+            ).innerText =
+                "② 正在获取真实道路坐标……";
+            /*
+             * 获取完整 geometry
+             */
+            const geometryData =
+                await fetchOverpass(
+                    createGeometryQuery(
+                        result.road.id
+                    )
+                );
+            let road = null;
+            for (
+                const item
+                of geometryData.elements
+            ) {
+                if (
+                    item.type === "way" &&
+                    item.geometry &&
+                    item.geometry.length > 1
+                ) {
+                    road =
+                        item;
+                    break;
+                }
+            }
+            if (!road) {
+                throw new Error(
+                    "无法获取道路 geometry"
+                );
+            }
+            selectedRoad =
+                road;
+            /*
+             * 显示真实道路
+             */
+            showSelectedRoad(
+                road
+            );
+            /*
+             * 道路名称
+             */
+            const roadName =
+                road.tags &&
+                road.tags.name
+                    ? road.tags.name
+                    : "未命名道路";
+            /*
+             * 道路长度
+             */
+            let length = 0;
+            for (
+                let i = 1;
+                i < road.geometry.length;
+                i++
+            ) {
+                length +=
+                    distanceMeters(
+                        road.geometry[i - 1].lon,
+                        road.geometry[i - 1].lat,
+                        road.geometry[i].lon,
+                        road.geometry[i].lat
+                    );
+            }
+            /*
+             * 左侧道路信息
+             */
+            document.getElementById(
+                "roadInfo"
+            ).style.display =
+                "block";
+            document.getElementById(
+                "roadName"
+            ).innerText =
+                "🚦 " +
+                roadName;
+            document.getElementById(
+                "roadDetail"
+            ).innerHTML =
+                "OSM Way ID：" +
+                road.id +
+                "<br>" +
+                "道路类型：" +
+                (
+                    road.tags &&
+                    road.tags.highway
+                        ? road.tags.highway
+                        : "-"
+                ) +
+                "<br>" +
+                "道路长度：" +
+                (
+                    length / 1000
+                ).toFixed(2) +
+                " km" +
+                "<br>" +
+                "点击距离：" +
+                result.distance.toFixed(1) +
+                " m";
+            /*
+             * 地图放大
+             */
+            map.flyTo({
+                center: [
+                    selectedLng,
+                    selectedLat
+                ],
+                zoom: 15,
+                pitch: 0,
+                bearing: 0,
+                duration: 900
+            });
+            /*
+             * 启动监测
+             */
+            document.getElementById(
+                "message"
+            ).innerText =
+                "③ 正在生成当前道路附近交通碳排放云图……";
+            startMonitoring(
+                road
+            );
+            document.getElementById(
+                "message"
+            ).innerText =
+                "✅ 已启动：仅显示当前道路附近约600m范围，每3秒更新";
+        }
+        catch (error) {
+            console.error(
+                "道路查询失败：",
+                error
+            );
+            document.getElementById(
+                "message"
+            ).innerText =
+                "❌ " +
+                (
+                    error.message ||
+                    "道路查询失败"
+                );
+            document.getElementById(
+                "monitorState"
+            ).innerText =
+                "查询失败";
+            document.getElementById(
+                "statusText"
+            ).innerText =
+                "点击道路重新查询";
+            document.getElementById(
+                "statusDot"
+            ).classList.remove(
+                "active"
+            );
+        }
+        isQuerying = false;
+    }
+);
+/* =========================================================
+   28. 鼠标
+========================================================= */
+map.on(
+    "mouseenter",
+    function() {
+        map.getCanvas().style.cursor =
+            "crosshair";
+    }
+);
+/* =========================================================
+   29. 趋势图
+========================================================= */
+function drawChart() {
+    const canvas =
+        document.getElementById(
+            "chart"
+        );
+    const ctx =
+        canvas.getContext(
+            "2d"
+        );
+    const width =
+        canvas.width;
+    const height =
+        canvas.height;
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+    if (
+        history.length === 0
+    ) {
+        return;
+    }
+    let min =
+        Math.min(
+            ...history
+        );
+    let max =
+        Math.max(
+            ...history
+        );
+    if (
+        max === min
+    ) {
+        max += 10;
+        min -= 10;
+    }
+    const padding = 8;
+    const chartWidth =
+        width -
+        padding * 2;
+    const chartHeight =
+        height -
+        padding * 2;
+    /*
+     * 网格
+     */
+    ctx.strokeStyle =
+        "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 1;
+    for (
+        let i = 1;
+        i <= 3;
+        i++
+    ) {
+        const y =
+            padding +
+            chartHeight *
+            i /
+            4;
+        ctx.beginPath();
+        ctx.moveTo(
+            padding,
+            y
+        );
+        ctx.lineTo(
+            width - padding,
+            y
+        );
+        ctx.stroke();
+    }
+    /*
+     * 折线
+     */
+    ctx.beginPath();
+    for (
+        let i = 0;
+        i < history.length;
+        i++
+    ) {
+        const x =
+            padding +
+            (
+                i /
+                Math.max(
+                    1,
+                    history.length - 1
+                )
+            ) *
+            chartWidth;
+        const ratio =
+            (
+                history[i] -
+                min
+            ) /
+            (
+                max -
+                min
+            );
+        const y =
+            padding +
+            (
+                1 - ratio
+            ) *
+            chartHeight;
+        if (i === 0) {
+            ctx.moveTo(
+                x,
+                y
+            );
+        }
+        else {
+            ctx.lineTo(
+                x,
+                y
+            );
+        }
+    }
+    ctx.strokeStyle =
+        "#19d477";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    /*
+     * 最新值
+     */
+    const last =
+        history[
+            history.length - 1
+        ];
+    ctx.fillStyle =
+        "#8ca1b3";
+    ctx.font =
+        "9px Arial";
+    ctx.textAlign =
+        "right";
+    ctx.fillText(
+        last.toFixed(1) +
+        " kg/h",
+        width - padding,
+        10
+    );
+}
+/* =========================================================
+   30. 时钟
+========================================================= */
+function updateClock() {
+    document.getElementById(
+        "clock"
+    ).innerText =
+        new Date().toLocaleTimeString(
+            "zh-CN",
+            {
+                hour12: false
+            }
+        );
+}
+setInterval(
+    updateClock,
+    1000
+);
+updateClock();
+/* =========================================================
+   31. 地图加载
+========================================================= */
+map.on(
+    "load",
+    function() {
+        console.log(
+            "MapLibre 地图加载成功"
+        );
+        console.log(
+            "GreenTraffic 等待点击道路"
+        );
+        drawChart();
+    }
+);
+</script>
+</body>
+</html>

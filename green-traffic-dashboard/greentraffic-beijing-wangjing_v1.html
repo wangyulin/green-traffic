@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenTraffic · 北京望京交通碳排放监测</title>
+<link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<style>
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;background:#071522;color:#fff}
+#map{position:absolute;inset:0}
+.panel{position:absolute;z-index:10;background:rgba(5,18,30,.95);border:1px solid rgba(255,255,255,.08);border-radius:12px;backdrop-filter:blur(12px);box-shadow:0 8px 30px rgba(0,0,0,.22)}
+.header{left:18px;right:18px;top:14px;height:62px;padding:0 18px;display:flex;align-items:center;justify-content:space-between}
+.title{display:flex;align-items:center;gap:11px}.logo{width:38px;height:38px;border-radius:9px;background:#16c978;display:grid;place-items:center;font-size:20px}
+.t1{font-size:17px;font-weight:bold}.t2{font-size:10px;color:#8195a8;margin-top:3px}
+.status{font-size:10px;color:#8ba0b2;display:flex;gap:8px;align-items:center}.dot{width:8px;height:8px;border-radius:50%;background:#19d477;box-shadow:0 0 10px #19d477}.dot.active{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.75)}}
+.left{left:18px;top:90px;width:285px;padding:14px}.right{right:18px;top:90px;width:305px;padding:14px}
+h3{font-size:13px;margin:0 0 10px}.help{padding:10px;background:rgba(255,255,255,.035);border-radius:8px;color:#8ba0b2;font-size:10px;line-height:1.75}
+.road-list{margin-top:10px;display:grid;gap:6px;max-height:310px;overflow:auto}
+.road-btn{border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.035);color:#d7e2ea;padding:8px 9px;border-radius:7px;text-align:left;cursor:pointer;font-size:10px}
+.road-item{display:flex;gap:8px;align-items:center}
+.cal-btn{background:transparent;border:1px solid rgba(255,255,255,.04);padding:4px 7px;border-radius:6px;font-size:10px;color:#8fbf9a;cursor:pointer}
+.road-btn:hover,.road-btn.active{background:rgba(25,201,118,.11);border-color:rgba(25,201,118,.35)}
+.road-meta{color:#71879a;font-size:8px;margin-top:3px}
+.monitor{display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:9px;color:#8ca1b4;font-size:9px}.state{color:#19d477;font-weight:bold}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.stat{padding:9px;border-radius:8px;background:rgba(255,255,255,.035)}.label{color:#71879a;font-size:8px}.value{margin-top:4px;font-size:16px;font-weight:bold}.unit{font-size:8px;color:#71879a;font-weight:normal}
+.carbon{margin-top:8px;padding:11px;border-radius:9px;background:rgba(25,201,118,.07);border:1px solid rgba(25,201,118,.14)}
+.carbon-title{font-size:9px;color:#8195a8}.carbon-value{font-size:24px;font-weight:bold;margin-top:3px}.level{display:inline-block;margin-top:5px;padding:4px 7px;border-radius:5px;font-size:8px;font-weight:bold}
+.low{color:#19d477;background:rgba(25,212,119,.12)}.mid{color:#f4e842;background:rgba(244,232,66,.12)}.high{color:#f4a62a;background:rgba(244,166,42,.12)}.danger{color:#ff4940;background:rgba(255,73,64,.14)}
+.chart-title{margin:11px 0 5px;color:#8195a8;font-size:9px}#chart{width:100%;height:75px;background:rgba(255,255,255,.02);border-radius:6px}
+.legend{position:absolute;z-index:10;left:325px;bottom:18px;width:255px;padding:11px}.legend-title{font-size:9px;font-weight:bold;margin-bottom:6px}.gradient{height:10px;border-radius:10px;background:linear-gradient(to right,#19c976,#a9d83d,#f4e842,#f4a62a,#f05b4f,#b40000)}.labels{display:flex;justify-content:space-between;color:#708598;font-size:8px;margin-top:4px}
+.info{margin-top:9px;padding:8px;border-radius:7px;background:rgba(255,255,255,.035);font-size:9px;color:#71879a;line-height:1.6}
+.maplibregl-popup-content{min-width:235px;padding:12px;color:#fff;background:#0b1c2d;border-radius:9px;border:1px solid rgba(255,255,255,.1)}.pop-title{font-size:13px;font-weight:bold;margin-bottom:6px}.pop-row{display:flex;justify-content:space-between;font-size:9px;line-height:1.8;color:#8195a8}.pop-v{color:#fff;font-weight:bold}
+@media(max-width:760px){.left{width:225px;left:8px}.right{width:245px;right:8px}.legend{display:none}.header{left:8px;right:8px}.t2{display:none}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="panel header">
+  <div class="title"><div class="logo">🌱</div><div><div class="t1">GreenTraffic · 望京</div><div class="t2">北京市朝阳区望京片区交通碳排放实时监测与模拟展示</div></div></div>
+  <div class="status"><span id="dot" class="dot"></span><span id="status">请选择道路</span><span id="clock"></span></div>
+</div>
+<div style="position:absolute;right:18px;top:86px;z-index:11">
+  <button id="debugToggle" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#d7e2ea;padding:6px 8px;border-radius:8px;font-size:12px;cursor:pointer">显示匹配要素</button>
+  <button id="exportCal" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#d7e2ea;padding:6px 8px;border-radius:8px;font-size:12px;cursor:pointer;margin-left:8px">导出校准</button>
+  <button id="copyViewLink" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#d7e2ea;padding:6px 8px;border-radius:8px;font-size:12px;cursor:pointer;margin-left:8px">复制视图链接</button>
+</div>
+
+<div class="panel left">
+  <h3>🌍 望京重点道路</h3>
+  <div class="help">
+    本演示选取望京片区 6 条代表性道路。直接点击地图上的街道，即可识别对应街道并随机生成该街道的交通碳排放数据。
+    <br><br>数据为演示模拟数据，不代表真实车辆实时排放。
+  </div>
+  <div id="roadList" class="road-list"></div>
+  <div id="info" class="info">
+  请直接点击地图上的街道……<br>
+  <span style="color:#60788b">系统会根据点击道路的位置生成随机交通流量、速度、拥堵指数和 CO₂ 排放空间分布。</span>
+</div>
+</div>
+
+<div class="panel right">
+  <div class="monitor"><span>当前道路实时监测</span><span id="state" class="state">未启动</span></div>
+  <div class="grid">
+    <div class="stat"><div class="label">平均 CO₂</div><div class="value"><span id="avg">--</span> <span class="unit">kg/h</span></div></div>
+    <div class="stat"><div class="label">最大 CO₂</div><div class="value"><span id="max">--</span> <span class="unit">kg/h</span></div></div>
+    <div class="stat"><div class="label">交通流量</div><div class="value"><span id="traffic">--</span> <span class="unit">辆/h</span></div></div>
+    <div class="stat"><div class="label">拥堵指数</div><div class="value"><span id="congestion">--</span></div></div>
+  </div>
+  <div class="carbon"><div class="carbon-title">当前道路区域综合排放</div><div><span id="carbon" class="carbon-value">--</span> <span class="unit">kg/h</span></div><span id="level" class="level low">等待数据</span></div>
+  <div class="chart-title">最近 60 秒 CO₂ 变化</div><canvas id="chart" width="275" height="75"></canvas>
+</div>
+
+<div class="panel legend">
+  <div class="legend-title">CO₂ 排放严重程度</div>
+  <div class="gradient"></div>
+  <div class="labels"><span>低</span><span>中</span><span>较高</span><span>高</span><span>严重</span></div>
+</div>
+
+<script>
+const ROADS = [
+  {
+    "id": "road1",
+    "name": "广顺北大街",
+    "type": "主干路",
+    "length": "约 3.6 km",
+    "center": [116.46181633596586,39.99683438370002],
+    "flow": [2600,5200],
+    "speed": [25,48],
+    "bearing": 0
+  },
+  {
+    "id": "road2",
+    "name": "阜通东大街",
+    "type": "主干路",
+    "length": "约 2.1 km",
+    "center": [116.47551458275603,39.99030334631291],
+    "flow": [2200,4600],
+    "speed": [24,46],
+    "bearing": -2.254505920790413
+  },
+  {
+    "id": "road3",
+    "name": "阜通西大街",
+    "type": "主干路",
+    "length": "约 2.0 km",
+    "center": [116.46198110658986,39.9896167432523],
+    "flow": [1900,4100],
+    "speed": [26,50],
+    "bearing": 2.726100558108046
+  },
+  {
+    "id": "road4",
+    "name": "望京街",
+    "type": "次干路",
+    "length": "约 2.7 km",
+    "center": [116.47203505039346,39.99420227830919],
+    "flow": [1500,3500],
+    "speed": [22,45],
+    "bearing": 0
+  },
+  {
+    "id": "road5",
+    "name": "湖光中街",
+    "type": "主干路",
+    "length": "约 1.3 km",
+    "center": [116.45491593385299,39.99574820278116],
+    "flow": [1800,3800],
+    "speed": [23,46],
+    "bearing": 0
+  },
+  {
+    "id": "road6",
+    "name": "望京东路",
+    "type": "主干路",
+    "length": "约 1.1 km",
+    "center": [116.4788478612877,39.9876305014603],
+    "flow": [1700,3600],
+    "speed": [24,48],
+    "bearing": 0
+  }
+];
+
+// 解析 URL 查询参数，返回普通对象，支持 center as 'lng,lat'
+function parseQuery(){
+  const q = {};
+  try{
+    const s = location.search.replace(/^\?/,'');
+    if(!s) return q;
+    s.split('&').forEach(pair=>{
+      const [k,v] = pair.split('='); if(!k) return;
+      const key = decodeURIComponent(k);
+      const val = v===undefined?'' : decodeURIComponent(v);
+      if(key==='center'){
+        const parts = val.split(',').map(x=>parseFloat(x)).filter(x=>!isNaN(x)); if(parts.length===2) q.center = [parts[0],parts[1]];
+      } else if(key==='zoom') q.zoom = parseFloat(val);
+      else if(key==='bearing') q.bearing = parseFloat(val);
+      else if(key==='pitch') q.pitch = parseFloat(val);
+      else if(key==='roadId') q.roadId = val;
+      else if(key==='name') q.name = val;
+      else q[key]=val;
+    });
+  }catch(e){}
+  return q;
+}
+
+// 生成带视图与道路信息的页面链接
+function generateRegionUrl(opts){
+  const p = new URLSearchParams();
+  if(opts.center && Array.isArray(opts.center)) p.set('center', `${opts.center[0]},${opts.center[1]}`);
+  if(opts.zoom!==undefined) p.set('zoom', String(opts.zoom));
+  if(opts.bearing!==undefined) p.set('bearing', String(opts.bearing));
+  if(opts.pitch!==undefined) p.set('pitch', String(opts.pitch));
+  if(opts.roadId) p.set('roadId', String(opts.roadId));
+  if(opts.name) p.set('name', String(opts.name));
+  return location.pathname + '?' + p.toString();
+}
+
+const PAGE_PARAMS = parseQuery();
+
+const initialCenter = PAGE_PARAMS.center || [116.4705,39.9970];
+const initialZoom = (PAGE_PARAMS.zoom!==undefined) ? PAGE_PARAMS.zoom : 14;
+const initialPitch = (PAGE_PARAMS.pitch!==undefined) ? PAGE_PARAMS.pitch : 0;
+const initialBearing = (PAGE_PARAMS.bearing!==undefined) ? PAGE_PARAMS.bearing : 0;
+const map = new maplibregl.Map({
+  container:"map",
+  style:"https://tiles.openfreemap.org/styles/liberty",
+  center: initialCenter,
+  zoom: initialZoom,
+  pitch: initialPitch,
+  bearing: initialBearing
+});
+map.addControl(new maplibregl.NavigationControl(),"bottom-right");
+map.getCanvas().style.cursor = "default";
+
+let selected=null, timer=null, history=[], popup=null;
+let debugShow=false, lastMatchedFeature=null, lastMatchedBP=null;
+
+function rnd(a,b){return a+Math.random()*(b-a)}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function offset(c,x,y){
+  const lat=c[1]+y/111000;
+  const lng=c[0]+x/(111000*Math.cos(c[1]*Math.PI/180));
+  return [lng,lat];
+}
+
+function roadData(road){
+  const rush = Math.sin(Date.now()/60000);
+  const traffic = rnd(road.flow[0],road.flow[1])*(rush>.2?1.12:.88);
+  const speed = rnd(road.speed[0],road.speed[1])*(traffic>road.flow[1]*.85?.82:1);
+  const congestion=clamp(50/speed,1,4);
+  let carbon=traffic*rnd(.105,.165)*(1+(4-congestion)*.13);
+  carbon=clamp(carbon,100,900);
+  return {traffic,speed,congestion,carbon};
+}
+
+function generatePoints(road){
+  // 支持单条道路或交叉口对象（含 children 数组）
+  if(road && Array.isArray(road.children)){
+    const all=[];
+    road.children.forEach(ch=>{ const pts = generatePoints(ch); all.push(...pts); });
+    return all;
+  }
+  const p=[];
+  const base=roadData(road);
+
+  // 优先使用要素几何按段抽样生成点，以覆盖道路完整区间；若无几何则回退为原随机生成
+  if(road.geometry && (road.geometry.type === 'LineString' || road.geometry.type === 'MultiLineString')){
+    // 合并多段为 coords
+    let coords = road.geometry.coordinates;
+    if(road.geometry.type==='MultiLineString') coords = coords.flat();
+    // 步长与横向扩散
+    const step = 12; // 每 12m 一个采样点
+    const lateral = 40; // 横向最大偏移 ±40m
+    // 遍历线段
+    for(let i=0;i<coords.length-1;i++){
+      const a = coords[i], b = coords[i+1];
+      const latAvg=(a[1]+b[1])/2;
+      const dx_m = (b[0]-a[0]) * (111000*Math.cos(latAvg*Math.PI/180));
+      const dy_m = (b[1]-a[1]) * 111000;
+      const segLen = Math.hypot(dx_m,dy_m);
+      if(segLen < 4) continue;
+      const segBearing = Math.atan2(dy_m, dx_m);
+      const samples = Math.max(1, Math.floor(segLen/step));
+      for(let s=0;s<=samples;s++){
+        const t = s/samples;
+        const lon = a[0]*(1-t)+b[0]*t;
+        const lat = a[1]*(1-t)+b[1]*t;
+        const across = rnd(-lateral, lateral);
+        const cosB=Math.cos(segBearing), sinB=Math.sin(segBearing);
+        const ex = -across * sinB; // 东向米
+        const ey = across * cosB;  // 北向米
+        const pos = offset([lon,lat], ex, ey);
+        const d = Math.abs(across);
+        const factor = clamp(1 - d/120, 0.05, 1);
+        const vehicleFactor=rnd(.75,1.25);
+        const congestionFactor=1+(base.congestion-1)*rnd(.04,.16);
+        const carbon=clamp(base.traffic * rnd(.09,.16) * factor * vehicleFactor * congestionFactor, 20, 980);
+        p.push({lng:pos[0],lat:pos[1],carbon:carbon,traffic:base.traffic*factor*rnd(.82,1.12),speed:clamp(base.speed*rnd(.82,1.06),12,60)});
+        if(p.length>600) break;
+      }
+      if(p.length>600) break;
+    }
+    // 若点数太少，回退到随机策略补足
+    if(p.length<80){
+      // 继续用原来方式补充到目标数量
+      const needed = 110 - p.length;
+      const bearing = (road.bearing !== undefined) ? road.bearing : 0;
+      for(let i=0;i<needed;i++){
+        const along=rnd(-250,250);
+        const across=rnd(-50,50);
+        const cosB=Math.cos(bearing), sinB=Math.sin(bearing);
+        const dx = along * cosB - across * sinB;
+        const dy = along * sinB + across * cosB;
+        const d=Math.abs(across);
+        const factor=clamp(1 - d/100, 0.06, 1);
+        const vehicleFactor=rnd(.75,1.35);
+        const congestionFactor=1+(base.congestion-1)*rnd(.05,.18);
+        const carbon=clamp(base.traffic * rnd(.095,.175) * factor * vehicleFactor * congestionFactor,25,980);
+        const pos=offset(road.center,dx,dy);
+        p.push({lng:pos[0],lat:pos[1],carbon:carbon,traffic:base.traffic*factor*rnd(.82,1.18),speed:clamp(base.speed*rnd(.82,1.08),12,60)});
+      }
+    }
+    return p;
+  }
+
+  // 回退：无几何时维持原有生成逻辑（但已缩小散布）
+  const bearing = (road.bearing !== undefined) ? road.bearing : 0; // radians
+  for(let i=0;i<110;i++){
+    const along=rnd(-250,250);
+    const across=rnd(-50,50);
+    const cosB=Math.cos(bearing), sinB=Math.sin(bearing);
+    const dx = along * cosB - across * sinB;
+    const dy = along * sinB + across * cosB;
+    const d=Math.abs(across);
+    const factor=clamp(1 - d/100, 0.06, 1);
+    const vehicleFactor=rnd(.75,1.35);
+    const congestionFactor=1+(base.congestion-1)*rnd(.05,.18);
+    const carbon=clamp(base.traffic * rnd(.095,.175) * factor * vehicleFactor * congestionFactor,25,980);
+    const pos=offset(road.center,dx,dy);
+    p.push({lng:pos[0],lat:pos[1],carbon:carbon,traffic:base.traffic*factor*rnd(.82,1.18),speed:clamp(base.speed*rnd(.82,1.08),12,60)});
+  }
+  return p;
+}
+
+// 计算给定线要素（LineString）的最近投影点以及相应线段的朝向（弧度）。
+function computeBearingAndPointFromFeature(feature, lngLat){
+  try{
+    const geom = feature.geometry || {};
+    let coords = geom.coordinates;
+    if(!coords) return null;
+    // 支持 MultiLineString（多段）和 LineString
+    if(geom.type === 'MultiLineString'){
+      // 合并为连续的坐标段数组
+      coords = coords.flat();
+    }
+    if(!coords || coords.length<2) return null;
+    // 将经纬度差转换为米（局部近似）
+    const px = lngLat.lng, py = lngLat.lat;
+    let best = {dist2: Infinity, proj:[coords[0][0],coords[0][1]], bearing:0};
+    for(let i=0;i<coords.length-1;i++){
+      const a = coords[i], b = coords[i+1];
+      const latAvg = (a[1]+b[1]+py)/3;
+      const ax = a[0], ay = a[1], bx = b[0], by = b[1];
+      const dx = (bx-ax) * (111000*Math.cos(latAvg*Math.PI/180));
+      const dy = (by-ay) * 111000;
+      const vx = (px-ax) * (111000*Math.cos(latAvg*Math.PI/180));
+      const vy = (py-ay) * 111000;
+      const len2 = dx*dx+dy*dy;
+      let t = 0;
+      if(len2>0) t = clamp((vx*dx+vy*dy)/len2,0,1);
+      // convert projected point back to lon/lat directly by interpolation
+      const projLon = ax*(1-t)+bx*t;
+      const projLat = ay*(1-t)+by*t;
+      // distance squared in meters between clicked point and projection
+      const ddx = (projLon-px) * (111000*Math.cos(latAvg*Math.PI/180));
+      const ddy = (projLat-py) * 111000;
+      const dist2 = ddx*ddx+ddy*ddy;
+      if(dist2<best.dist2){
+        const bearing = Math.atan2(dy,dx); // radians, from east toward north
+        best = {dist2, proj:[projLon,projLat], bearing};
+      }
+    }
+    return best;
+  }catch(e){return null}
+}
+
+function showDebugFeature(feature, bp){
+  if(!map) return;
+  // remove existing debug layers/sources
+  try{ if(map.getLayer('debug-road')) map.removeLayer('debug-road'); }catch(e){}
+  try{ if(map.getSource('debug-road')) map.removeSource('debug-road'); }catch(e){}
+  try{ if(map.getLayer('debug-point')) map.removeLayer('debug-point'); }catch(e){}
+  try{ if(map.getSource('debug-point')) map.removeSource('debug-point'); }catch(e){}
+  try{ if(map.getLayer('debug-arrow')) map.removeLayer('debug-arrow'); }catch(e){}
+  try{ if(map.getSource('debug-arrow')) map.removeSource('debug-arrow'); }catch(e){}
+  try{ if(map.getLayer('debug-geom-arrow')) map.removeLayer('debug-geom-arrow'); }catch(e){}
+  try{ if(map.getSource('debug-geom-arrow')) map.removeSource('debug-geom-arrow'); }catch(e){}
+
+  // add feature geometry (as LineString or MultiLineString) if available
+  const geom = feature.geometry || null;
+  if(geom){
+    map.addSource('debug-road',{type:'geojson',data: {type:'Feature',geometry:geom,properties:{}}});
+    map.addLayer({id:'debug-road',type:'line',source:'debug-road',paint:{'line-color':'#ffcc00','line-width':4,'line-opacity':0.85}});
+  }
+  if(bp && bp.proj){
+    const pt = {type:'Feature',geometry:{type:'Point',coordinates:bp.proj},properties:{}};
+    map.addSource('debug-point',{type:'geojson',data:pt});
+    map.addLayer({id:'debug-point',type:'circle',source:'debug-point',paint:{'circle-radius':8,'circle-color':'#ff4444'}});
+    // draw bearing arrow from proj point
+    const len = 200; // meters for arrow
+    const ex = bp.proj[0] + (len/ (111000*Math.cos(bp.proj[1]*Math.PI/180))) * Math.cos(bp.bearing || 0);
+    const ey = bp.proj[1] + (len/111000) * Math.sin(bp.bearing || 0);
+    const arrow = {type:'Feature',geometry:{type:'LineString',coordinates:[bp.proj,[ex,ey]]}};
+    map.addSource('debug-arrow',{type:'geojson',data:arrow});
+    map.addLayer({id:'debug-arrow',type:'line',source:'debug-arrow',paint:{'line-color':'#ff4444','line-width':3,'line-opacity':0.9}});
+    // if feature exists, compute average geometry bearing and draw for comparison
+    if(geom){
+      const geomBearing = computeAverageBearingFromFeature(feature);
+      if(geomBearing!==null){
+        const ex2 = bp.proj[0] + (len/ (111000*Math.cos(bp.proj[1]*Math.PI/180))) * Math.cos(geomBearing);
+        const ey2 = bp.proj[1] + (len/111000) * Math.sin(geomBearing);
+        const arrow2 = {type:'Feature',geometry:{type:'LineString',coordinates:[bp.proj,[ex2,ey2]]}};
+        map.addSource('debug-geom-arrow',{type:'geojson',data:arrow2});
+        map.addLayer({id:'debug-geom-arrow',type:'line',source:'debug-geom-arrow',paint:{'line-color':'#ffd166','line-width':2,'line-opacity':0.9,'line-dasharray':[2,2]}});
+        // show bearing info in console and status
+        console.log('debug bearings: bp.bearing=',bp.bearing,'geomBearing=',geomBearing);
+        document.getElementById('status').textContent = `匹配朝向：校准 ${((bp.bearing||0)*180/Math.PI).toFixed(1)}°，要素 ${((geomBearing)*180/Math.PI).toFixed(1)}°`;
+      }
+    }
+  }
+}
+
+function computeAverageBearingFromFeature(feature){
+  try{
+    const geom = feature.geometry || {};
+    let coords = geom.coordinates;
+    if(!coords) return null;
+    if(geom.type === 'MultiLineString') coords = coords.flat();
+    if(!coords || coords.length<2) return null;
+    let sumX=0,sumY=0,count=0;
+    for(let i=0;i<coords.length-1;i++){
+      const a=coords[i], b=coords[i+1];
+      const latAvg=(a[1]+b[1])/2;
+      const dx = (b[0]-a[0]) * (111000*Math.cos(latAvg*Math.PI/180));
+      const dy = (b[1]-a[1]) * 111000;
+      const len = Math.hypot(dx,dy);
+      if(len<1) continue;
+      sumX += dx/len; sumY += dy/len; count++;
+    }
+    if(count===0) return null;
+    return Math.atan2(sumY/count, sumX/count);
+  }catch(e){return null}
+}
+
+function metersBetween(a,b){
+  const latAvg=(a[1]+b[1])/2;
+  const dx = (a[0]-b[0]) * (111000*Math.cos(latAvg*Math.PI/180));
+  const dy = (a[1]-b[1]) * 111000;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+function computeFeatureLengthMeters(feature){
+  try{
+    const geom = feature.geometry || {};
+    let coords = geom.coordinates;
+    if(!coords) return 0;
+    if(geom.type === 'MultiLineString') coords = coords.flat();
+    if(!coords || coords.length<2) return 0;
+    let sum=0;
+    for(let i=0;i<coords.length-1;i++){
+      const a=coords[i], b=coords[i+1];
+      const latAvg=(a[1]+b[1])/2;
+      const dx = (b[0]-a[0]) * (111000*Math.cos(latAvg*Math.PI/180));
+      const dy = (b[1]-a[1]) * 111000;
+      sum += Math.hypot(dx,dy);
+    }
+    return sum;
+  }catch(e){return 0}
+}
+
+// 解析 URL 查询参数，返回普通对象，支持 center as 'lng,lat'
+function parseQuery(){
+  const q = {};
+  try{
+    const s = location.search.replace(/^\?/,'');
+    if(!s) return q;
+    s.split('&').forEach(pair=>{
+      const [k,v] = pair.split('='); if(!k) return;
+      const key = decodeURIComponent(k);
+      const val = v===undefined?'' : decodeURIComponent(v);
+      if(key==='center'){
+        const parts = val.split(',').map(x=>parseFloat(x)).filter(x=>!isNaN(x)); if(parts.length===2) q.center = [parts[0],parts[1]];
+      } else if(key==='zoom') q.zoom = parseFloat(val);
+      else if(key==='bearing') q.bearing = parseFloat(val);
+      else if(key==='pitch') q.pitch = parseFloat(val);
+      else if(key==='roadId') q.roadId = val;
+      else if(key==='name') q.name = val;
+      else q[key]=val;
+    });
+  }catch(e){}
+  return q;
+}
+
+// 生成带视图与道路信息的页面链接
+// (parseQuery and PAGE_PARAMS moved earlier to ensure availability before map init)
+
+// debug toggle button
+document.addEventListener('DOMContentLoaded',()=>{
+  const btn=document.getElementById('debugToggle');
+  if(!btn) return;
+  btn.onclick=()=>{ debugShow = !debugShow; btn.textContent = debugShow? '隐藏匹配要素':'显示匹配要素';
+    if(!debugShow){ try{ if(map.getLayer('debug-road')) map.removeLayer('debug-road'); }catch(e){} try{ if(map.getSource('debug-road')) map.removeSource('debug-road'); }catch(e){}
+      try{ if(map.getLayer('debug-point')) map.removeLayer('debug-point'); }catch(e){} try{ if(map.getSource('debug-point')) map.removeSource('debug-point'); }catch(e){}
+    } else { if(lastMatchedFeature) showDebugFeature(lastMatchedFeature,lastMatchedBP); }
+  };
+  const exp=document.getElementById('exportCal');
+  if(exp){
+    exp.onclick = async ()=>{
+      try{
+        const json = JSON.stringify(ROADS, null, 2);
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(json);
+          document.getElementById('status').textContent = '已将校准数据复制到剪贴板';
+        } else {
+          // fallback copy
+          const ta = document.createElement('textarea'); ta.style.position='fixed'; ta.style.left='-9999px'; ta.value=json; document.body.appendChild(ta); ta.select();
+          document.execCommand('copy'); document.body.removeChild(ta);
+          document.getElementById('status').textContent = '已将校准数据复制到剪贴板（使用回退）';
+        }
+        console.log('Exported ROADS calibration:\n', json);
+      }catch(err){
+        console.error(err);
+        document.getElementById('status').textContent = '导出失败，已在控制台打印数据';
+        console.log('ROADS:', ROADS);
+      }
+    };
+  }
+      const copyBtn = document.getElementById('copyViewLink');
+      if(copyBtn){
+        copyBtn.onclick = async ()=>{
+          try{
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            const bearing = map.getBearing();
+            const pitch = map.getPitch();
+            const opts = { center:[center.lng,center.lat], zoom:zoom, bearing:bearing, pitch:pitch };
+            if(selected && selected.id) opts.roadId = selected.id;
+            const url = generateRegionUrl(opts);
+            if(navigator.clipboard && navigator.clipboard.writeText){ await navigator.clipboard.writeText(location.origin + url); document.getElementById('status').textContent = '已复制视图链接到剪贴板'; }
+            else { const ta=document.createElement('textarea'); ta.style.position='fixed'; ta.style.left='-9999px'; ta.value = location.origin + url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); document.getElementById('status').textContent = '已复制视图链接（回退方式）'; }
+            console.log('Copied view link:', location.origin + url);
+          }catch(e){ console.error(e); document.getElementById('status').textContent = '复制失败'; }
+        };
+      }
+});
+
+function isRoadLayerFeature(f){
+  const layer = String(f && f.layer && f.layer.id || "").toLowerCase();
+  return /road|street|transport|highway|bridge|tunnel/.test(layer);
+}
+
+function tryAssignBearingsToPresets(){
+  if(!map || !map.loaded()) return;
+  ROADS.forEach(r=>{
+    try{
+      const pt = map.project(r.center);
+      // 先做小范围快速查找
+      let features = map.queryRenderedFeatures([[pt.x-12,pt.y-12],[pt.x+12,pt.y+12]]).filter(isRoadLayerFeature);
+      let roadFeat = features[0];
+      // 若未找到，扩大搜索半径并尝试沿多点采样（更密集、更远）
+      if(!roadFeat){
+        const offsets = [0,40,80,120,200,320,480,640,800];
+        for(const off of offsets){
+          const angles = [0,30,60,90,120,150,180,210,240,270,300,330];
+          for(const ang of angles){
+            const rad = ang*Math.PI/180;
+            const sample = offset(r.center, Math.cos(rad)*off, Math.sin(rad)*off);
+            const p = map.project(sample);
+            const found = map.queryRenderedFeatures([[p.x-24,p.y-24],[p.x+24,p.y+24]]).find(isRoadLayerFeature);
+            if(found){ roadFeat = found; break; }
+          }
+          if(roadFeat) break;
+        }
+      }
+      // 额外尝试沿东西南北方向做线段查询（若有长直道路）
+      if(!roadFeat){
+        const lineSamples = [ [ -200,0 ], [200,0], [0,-200], [0,200] ];
+        for(const s of lineSamples){
+          const a = map.project(offset(r.center, s[0], s[1]));
+          const b = map.project(offset(r.center, -s[0], -s[1]));
+          // 构造 bbox 覆盖线段
+          const minX = Math.min(a.x,b.x)-20, minY = Math.min(a.y,b.y)-20;
+          const maxX = Math.max(a.x,b.x)+20, maxY = Math.max(a.y,b.y)+20;
+          const found = map.queryRenderedFeatures([[minX,minY],[maxX,maxY]]).find(isRoadLayerFeature);
+          if(found){ roadFeat = found; break; }
+        }
+      }
+      if(roadFeat){
+        const bp = computeBearingAndPointFromFeature(roadFeat, {lng:r.center[0], lat:r.center[1]});
+        if(bp){ r.center = bp.proj; r.bearing = bp.bearing; }
+        // 保存匹配到的要素几何以便后续按要素抽样生成点
+        try{ r.geometry = roadFeat.geometry; r._matchedFeature = roadFeat; }catch(e){}
+        if(debugShow){ lastMatchedFeature = roadFeat; lastMatchedBP = bp; showDebugFeature(roadFeat, bp); }
+      }
+    }catch(e){/* ignore per-road errors */}
+  });
+}
+
+function geo(points){return {type:"FeatureCollection",features:points.map(p=>({type:"Feature",properties:{carbon:p.carbon},geometry:{type:"Point",coordinates:[p.lng,p.lat]}}))}}
+
+function updateHeat(){
+  if(!selected)return;
+  const pts=generatePoints(selected);
+  map.getSource("heat").setData(geo(pts));
+  const avg=pts.reduce((s,p)=>s+p.carbon,0)/pts.length;
+  const max=Math.max(...pts.map(p=>p.carbon));
+  const traffic=pts.reduce((s,p)=>s+p.traffic,0)/pts.length;
+  const speed=pts.reduce((s,p)=>s+p.speed,0)/pts.length;
+  document.getElementById("avg").textContent=avg.toFixed(1);
+  document.getElementById("max").textContent=max.toFixed(1);
+  document.getElementById("traffic").textContent=Math.round(traffic).toLocaleString();
+  document.getElementById("congestion").textContent=clamp(50/speed,1,4).toFixed(2);
+  document.getElementById("carbon").textContent=avg.toFixed(1);
+  const level=document.getElementById("level");
+  if(avg<220){level.textContent="低排放";level.className="level low"}
+  else if(avg<380){level.textContent="中等";level.className="level mid"}
+  else if(avg<550){level.textContent="较高";level.className="level high"}
+  else{level.textContent="严重";level.className="level danger"}
+  history.push(avg); if(history.length>20)history.shift(); drawChart();
+  if(popup)popup.remove();
+  let displayName = '当前道路';
+  if(selected){
+    if(selected.name && String(selected.name).trim()) displayName = selected.name;
+    else if(selected.displayName && String(selected.displayName).trim()) displayName = selected.displayName;
+    else if(Array.isArray(selected.children) && selected.children.length) displayName = selected.children.map(c=>c.name||c.id||'道路').join(' / ');
+    else if(selected.id) displayName = selected.id;
+  }
+  popup=new maplibregl.Popup({closeButton:false,offset:12})
+    .setLngLat(selected.center)
+    .setHTML(`<div class="pop-title">🚦 ${displayName}</div>
+      <div class="pop-row"><span>道路等级</span><span class="pop-v">${selected.type}</span></div>
+      <div class="pop-row"><span>区域平均 CO₂</span><span class="pop-v">${avg.toFixed(1)} kg/h</span></div>
+      <div class="pop-row"><span>最高 CO₂</span><span class="pop-v">${max.toFixed(1)} kg/h</span></div>
+      <div class="pop-row"><span>交通流量</span><span class="pop-v">${Math.round(traffic).toLocaleString()} 辆/h</span></div>
+      <div style="margin-top:7px;color:#61798d;font-size:8px">模拟交通监测数据 · 每3秒更新</div>`)
+    .addTo(map);
+}
+
+function selectRoad(road, clickedFromMap=false){
+  // 当通过侧栏选择预置道路时，尝试在地图上查找对应道路要素并微调 center/bearing
+  if(!clickedFromMap && map && map.loaded()){
+    try{
+      refineRoadFromMap(road);
+    }catch(e){/* ignore */}
+  }
+
+  selected=road; history=[];
+  document.querySelectorAll(".road-btn").forEach(x=>x.classList.toggle("active",x.dataset.id===road.id));
+  document.getElementById("state").textContent="● 实时监测";
+  document.getElementById("status").textContent="实时云图监测";
+  document.getElementById("dot").classList.add("active");
+  const infoName = (road.name && String(road.name).trim()) ? road.name : (Array.isArray(road.children) && road.children.length ? road.children.map(c=>c.name||c.id||'道路').join(' / ') : (road.id||'当前道路'));
+  document.getElementById("info").innerHTML=`<b style="color:#d7e2ea">${infoName}</b><br>道路类型：${road.type}<br>道路长度：${road.length}<br>监测范围：点击道路位置周边约 600m × 600m`;
+  map.flyTo({center:road.center,zoom:15,duration:800});
+  if(!map.getSource("heat")){
+    map.addSource("heat",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
+    map.addLayer({id:"heatmap",type:"heatmap",source:"heat",maxzoom:18,paint:{
+      "heatmap-weight":["interpolate",["linear"],["get","carbon"],35,0.04,200,0.22,400,0.48,600,0.75,900,1.0],
+      // 略微降低整体强度，避免低 zoom 下过度渲染
+      "heatmap-intensity":["interpolate",["linear"],["zoom"],11,.6,13,.88,15,1.1,17,1.4],
+      // 缩小半径，减少扩散到小区核心的可能
+      "heatmap-radius":["interpolate",["linear"],["zoom"],11,12,13,20,15,30,17,42],
+      "heatmap-color":["interpolate",["linear"],["heatmap-density"],0,"rgba(0,0,0,0)",.12,"#19c976",.28,"#a9d83d",.45,"#f4e842",.60,"#f4a62a",.75,"#f05b4f",.90,"#d62828",1,"#8b0000"],
+      "heatmap-opacity":["interpolate",["linear"],["zoom"],11,.45,13,.56,15,.65,17,.72]
+    }});
+  }
+  updateHeat();
+  clearInterval(timer); timer=setInterval(updateHeat,3000);
+}
+
+// 在地图上按名称或位置扩大搜索以找到道路要素，计算并更新 road.center 与 road.bearing（如果找到）
+function refineRoadFromMap(road){
+  if(!map || !map.loaded()) return;
+  const name = String(road.name || "").toLowerCase();
+  const pt = map.project(road.center);
+  // 更密集与更大的搜索半径
+  const radii = [12,24,48,96,192,384,768,1200];
+  for(const r of radii){
+    const bbox = [[pt.x-r,pt.y-r],[pt.x+r,pt.y+r]];
+    const features = map.queryRenderedFeatures(bbox).filter(isRoadLayerFeature);
+    if(!features.length) continue;
+    // 优先匹配名称相符的要素（允许模糊匹配）
+    let feat = features.find(f=>{
+      const props = f.properties || {};
+      const n = (props.name||props.name_zh||props['name:zh']||props.ref||"").toString().toLowerCase();
+      if(!n) return false;
+      return n === name || n.includes(name) || name.includes(n) || n.startsWith(name) || name.startsWith(n);
+    }) || features[0];
+    const bp = computeBearingAndPointFromFeature(feat, {lng:road.center[0], lat:road.center[1]});
+    if(bp){ road.center = bp.proj; road.bearing = bp.bearing; if(debugShow){ lastMatchedFeature = feat; lastMatchedBP = bp; showDebugFeature(feat,bp); } return; }
+    try{ road.geometry = feat.geometry; road._matchedFeature = feat; }catch(e){}
+  }
+  // 若仍未找到，做螺旋采样扩大搜索范围
+  const maxOff = 1500; // 米
+  const steps = 24;
+  for(let i=1;i<=steps;i++){
+    const frac = i/steps;
+    const off = frac * maxOff;
+    const angStep = Math.max(6, Math.floor(360/(8+Math.floor(off/100))));
+    for(let ang=0; ang<360; ang+=angStep){
+      const rad = ang*Math.PI/180;
+      const sample = offset(road.center, Math.cos(rad)*off, Math.sin(rad)*off);
+      const p2 = map.project(sample);
+      const features = map.queryRenderedFeatures([[p2.x-60,p2.y-60],[p2.x+60,p2.y+60]]).filter(isRoadLayerFeature);
+      if(features.length){
+        const feat = features[0];
+        const bp = computeBearingAndPointFromFeature(feat, {lng:sample[0], lat:sample[1]});
+        if(bp){ road.center = bp.proj; road.bearing = bp.bearing; if(debugShow){ lastMatchedFeature = feat; lastMatchedBP = bp; showDebugFeature(feat,bp); } return; }
+      }
+    }
+  }
+}
+
+const list=document.getElementById("roadList");
+let calibrationTarget=null, calibrationPoints=[];
+function startCalibration(road){
+  calibrationTarget = road; calibrationPoints = [];
+  document.getElementById('status').textContent = `校准 ${road.name}：请在地图上点击两次（中心，方向点）`;
+}
+
+ROADS.forEach(r=>{
+  const wrap=document.createElement('div'); wrap.className='road-item';
+  const b=document.createElement("button"); b.className="road-btn"; b.dataset.id=r.id;
+  b.innerHTML=`${r.name}<div class="road-meta">${r.type} · ${r.length}</div>`;
+  b.onclick=()=>selectRoad(r);
+  const cal=document.createElement('button'); cal.className='cal-btn'; cal.textContent='校准';
+  cal.onclick=(e)=>{ e.stopPropagation(); startCalibration(r); };
+  wrap.appendChild(b); wrap.appendChild(cal); list.appendChild(wrap);
+});
+
+ROADS.forEach(r=>{
+  new maplibregl.Marker({color:"#19c978"}).setLngLat(r.center).setPopup(
+    new maplibregl.Popup({offset:12}).setHTML(`<b>${r.name}</b><br><small>${r.type} · 点击查看模拟排放</small>`)
+  ).addTo(map);
+});
+
+map.on("load",()=>{
+  drawChart();
+  // 尝试为预置道路识别真实道路要素并计算朝向，使初次选择时云图对齐道路方向。
+  tryAssignBearingsToPresets();
+  // 如果 URL 中带有 roadId 或 name，则自动选中对应道路并展示（方便从外部表格跳转）
+  try{
+    if(PAGE_PARAMS.roadId){
+      const r = ROADS.find(x=>String(x.id)===String(PAGE_PARAMS.roadId) || String(x.id)===String(PAGE_PARAMS.roadId).trim());
+      if(r) selectRoad(r, false);
+    } else if(PAGE_PARAMS.name){
+      const nm = String(PAGE_PARAMS.name).toLowerCase();
+      const r = ROADS.find(x=>String(x.name).toLowerCase()===nm || String(x.name).toLowerCase().includes(nm));
+      if(r) selectRoad(r, false);
+    }
+  }catch(e){}
+  // 尝试从地图样式中识别道路图层；鼠标移动到道路上时显示点击手势。
+  map.on("mousemove", e => {
+    const features = map.queryRenderedFeatures(e.point);
+    const road = features.find(f => {
+      const layer = String(f.layer && f.layer.id || "").toLowerCase();
+      return /road|street|transport|highway|bridge|tunnel/.test(layer);
+    });
+    map.getCanvas().style.cursor = road ? "pointer" : "default";
+  });
+});
+// 点击地图上的真实道路图层：优先从 OpenFreeMap/MapLibre 当前渲染的道路要素中识别街道。
+// 不再按“离道路中心点最近”来判断。
+map.on("click", e => {
+  // 校准模式优先处理：若正在校准预置道路，收集两次点击
+  if(calibrationTarget){
+    calibrationPoints.push([e.lngLat.lng, e.lngLat.lat]);
+    if(calibrationPoints.length===1){
+      document.getElementById('status').textContent = `校准 ${calibrationTarget.name}：请点击第二点以确定道路方向`;
+      return;
+    }
+    // 两次点击完成：第一为中心，第二用于计算朝向
+    const center = calibrationPoints[0];
+    const dir = calibrationPoints[1];
+    const latAvg = (center[1]+dir[1])/2;
+    const dx = (dir[0]-center[0]) * (111000*Math.cos(latAvg*Math.PI/180));
+    const dy = (dir[1]-center[1]) * 111000;
+    const bearing = Math.atan2(dy,dx);
+    const finishedRoad = calibrationTarget;
+    finishedRoad.center = [center[0], center[1]];
+    finishedRoad.bearing = bearing;
+    calibrationTarget = null; calibrationPoints = [];
+    document.getElementById('status').textContent = `已校准 ${finishedRoad.name}`;
+    // 显示并开始监测
+    if(debugShow) showDebugFeature(null, {proj: finishedRoad.center, bearing: finishedRoad.bearing});
+    selectRoad(finishedRoad, true);
+    return;
+  }
+  const features = map.queryRenderedFeatures(e.point);
+  const road = features.find(f => {
+    const layer = String(f.layer && f.layer.id || "").toLowerCase();
+    return /road|street|transport|highway|bridge|tunnel/.test(layer);
+  });
+
+  if (road) {
+    // 收集该点附近的所有道路要素，若是十字路口则包含多条
+    const nearby = features.filter(isRoadLayerFeature);
+    const unique = [];
+    const seen = new Set();
+    nearby.forEach(f=>{
+      const props = f.properties || {};
+      const id = (props.id || props.osm_id || props.name || props.ref || JSON.stringify(f.geometry)).toString();
+      if(!seen.has(id)) { seen.add(id); unique.push(f); }
+    });
+
+    if(unique.length>1){
+      // 判断这些要素是否实际上属于同一路（例如被分段渲染）或确为交叉口：
+      const names = unique.map(f=>{ const p=f.properties||{}; return (p.name||p.name_zh||p['name:zh']||p.ref||'').toString().trim().toLowerCase(); }).filter(Boolean);
+      const nameCounts = {};
+      names.forEach(n=>{ nameCounts[n] = (nameCounts[n]||0)+1 });
+      const distinctNames = Array.from(new Set(names));
+      const majorityName = Object.keys(nameCounts).reduce((a,b)=> nameCounts[a]>nameCounts[b]?a:b, names[0]||'');
+      const majorityCount = nameCounts[majorityName]||0;
+      const majorityRatio = names.length? majorityCount / names.length : 0;
+
+      // 计算几何平均朝向差异
+      const bearings = unique.map(f=>{ const b = computeAverageBearingFromFeature(f); return (b===null?0:b); });
+      let maxDiff = 0;
+      for(let i=0;i<bearings.length;i++) for(let j=i+1;j<bearings.length;j++){
+        const d = Math.abs(((bearings[i]-bearings[j]+Math.PI)%(2*Math.PI))-Math.PI);
+        if(d>maxDiff) maxDiff=d;
+      }
+
+      // 计算投影点之间的最大距离（米）与要素长度统计
+      const projections = unique.map(f=>{ const bp = computeBearingAndPointFromFeature(f, e.lngLat); return bp && bp.proj ? bp.proj : [e.lngLat.lng,e.lngLat.lat]; });
+      let maxPairDist = 0;
+      for(let i=0;i<projections.length;i++) for(let j=i+1;j<projections.length;j++){
+        const d = metersBetween(projections[i], projections[j]); if(d>maxPairDist) maxPairDist=d;
+      }
+      const lengths = unique.map(f=>computeFeatureLengthMeters(f));
+      const avgLength = lengths.reduce((s,v)=>s+v,0)/Math.max(1,lengths.length);
+
+      // 决策阈值：名字一致率 >= 60% 或只有一个名字，且朝向差小于 30°，投影点最大间距小于 90m，且平均要素长度至少 80m
+      const treatAsSingle = (distinctNames.length<=1 || majorityRatio>=0.6) && maxDiff < (30*Math.PI/180) && maxPairDist < 90 && avgLength > 80;
+
+      if(treatAsSingle){
+        const f = unique[0];
+        const props = f.properties || {};
+        const clickedName = props.name || props.name_zh || props['name:zh'] || props.name_en || props.ref || majorityName || '当前道路';
+        const known = ROADS.find(r=>{ const n=String(r.name); return clickedName===n||clickedName.includes(n)||n.includes(clickedName); });
+        const selectedRoad = known || { id: 'clicked-'+Date.now(), name: clickedName, type: props.highway||props.class||'道路', length:'地图识别道路', center:[e.lngLat.lng,e.lngLat.lat], flow:[1200,4200], speed:[22,48] };
+        if(f && f.geometry){ const bp = computeBearingAndPointFromFeature(f, e.lngLat); if(bp){ selectedRoad.center = bp.proj; selectedRoad.bearing = bp.bearing; } try{ selectedRoad.geometry = f.geometry; }catch(e){} }
+        selectRoad(selectedRoad, true);
+      } else {
+        // 构造交叉口对象，children 为识别到的道路
+        const children = unique.map(f=>{
+          const props = f.properties || {};
+          const name = props.name || props.name_zh || props['name:zh'] || props.ref || '道路';
+          const bp = computeBearingAndPointFromFeature(f, e.lngLat) || {proj:[e.lngLat.lng,e.lngLat.lat], bearing:0};
+          try{ var geom = f.geometry; }catch(e){ geom = null; }
+          return {
+            id: 'child-'+(props.osm_id||props.id||Math.random()).toString(),
+            name: name,
+            type: props.highway || props.class || '道路',
+            center: bp.proj,
+            bearing: bp.bearing,
+            geometry: geom,
+            flow:[1200,4200], speed:[22,48]
+          };
+        });
+        const inter = { id:'intersection-'+Date.now(), name:'交叉口', type:'交叉口', center:[e.lngLat.lng,e.lngLat.lat], children };
+        selectRoad(inter, true);
+      }
+    } else {
+    const f = unique[0] || road;
+    const props = f.properties || {};
+    const clickedName = props.name || props.name_zh || props['name:zh'] || props.name_en || props.ref || '当前道路';
+    const known = ROADS.find(r=>{ const n=String(r.name); return clickedName===n||clickedName.includes(n)||n.includes(clickedName); });
+    const selectedRoad = known || { id: 'clicked-'+Date.now(), name: clickedName, type: props.highway||props.class||'道路', length:'地图识别道路', center:[e.lngLat.lng,e.lngLat.lat], flow:[1200,4200], speed:[22,48] };
+    if(f && f.geometry){ const bp = computeBearingAndPointFromFeature(f, e.lngLat); if(bp){ selectedRoad.center = bp.proj; selectedRoad.bearing = bp.bearing; } try{ selectedRoad.geometry = f.geometry; }catch(e){} }
+    selectRoad(selectedRoad, true);
+    }
+  } else {
+    // 点击空白区域时不给出错误提示
+    document.getElementById("status").textContent = "请点击道路";
+  }
+});
+
+function drawChart(){
+  const c=document.getElementById("chart"),ctx=c.getContext("2d"),w=c.width,h=c.height;
+  ctx.clearRect(0,0,w,h); if(!history.length)return;
+  const min=Math.min(...history),max=Math.max(...history)+1,p=8;
+  ctx.strokeStyle="rgba(255,255,255,.05)";ctx.lineWidth=1;
+  for(let i=1;i<=3;i++){let y=p+(h-2*p)*i/4;ctx.beginPath();ctx.moveTo(p,y);ctx.lineTo(w-p,y);ctx.stroke()}
+  ctx.beginPath();
+  history.forEach((v,i)=>{let x=p+i/(Math.max(1,history.length-1))*(w-2*p),y=p+(1-(v-min)/(max-min))*(h-2*p);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+  ctx.strokeStyle="#19d477";ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle="#8ca1b3";ctx.font="9px Arial";ctx.textAlign="right";ctx.fillText(history.at(-1).toFixed(1)+" kg/h",w-p,10);
+}
+function clock(){document.getElementById("clock").textContent=new Date().toLocaleTimeString("zh-CN",{hour12:false})}
+setInterval(clock,1000);clock();
+</script>
+</body>
+</html>

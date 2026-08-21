@@ -1,0 +1,52 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jackson:
+    default-property-inclusion: NON_NULL
+  application:
+    name: green-traffic
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/green_traffic?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
+#    username: green_traffic
+#    password: 123456Aa@
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+#    hikari:
+#      maximum-pool-size: 10
+#      minimum-idle: 5
+#      connection-timeout: 30000
+#      idle-timeout: 600000
+#      max-lifetime: 1800000
+#      pool-name: MySQLConnectionPool
+
+#
+
+# 存储类型配置
+storage:
+  type: ${STORAGE_TYPE:influxdb}  # influxdb 或 mysql
+
+traffic:
+  influxdb:
+    enabled: true
+    url: ${INFLUXDB_URL:http://localhost:8086}
+    token: ${INFLUXDB_TOKEN:mi1ZhIYdLj3kF0GxEpcR3IWVwHLxylVY5Fhf5gtOZ18dF7j5i6P9PslgpWRge5czcS0nVoFBYANDkMMnJRwI5Q==}
+    org: ${INFLUXDB_ORG:wyl}
+    bucket: ${INFLUXDB_BUCKET:green-traffic}
+    connect-timeout: 10s
+    read-timeout: 30s
+    write-timeout: 10s
+
+logging:
+  level:
+    root: INFO
+    com.greentraffic: INFO
+    org.springframework: INFO
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+management:
+  health:
+    db:
+      enabled: false

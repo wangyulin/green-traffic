@@ -1,0 +1,95 @@
+package com.greentraffic.infrastructure.rocketmq;
+
+import com.greentraffic.common.messaging.Message;
+import com.greentraffic.common.messaging.MessagePublisher;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.context.annotation.Profile;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.stereotype.Component;
+
+/**
+ * RocketMQ 消息发布者
+ * 用于测试环境
+ */
+@Slf4j
+@Component
+@Profile("test")
+@RequiredArgsConstructor
+public class RocketMQMessagePublisher implements MessagePublisher {
+
+    private final RocketMQTemplate rocketMQTemplate;
+
+    @Override
+    public void publish(Message<?> message) {
+        String destination = buildDestination(message);
+
+        try {
+            SendResult result = rocketMQTemplate.syncSend(
+                    destination,
+                    buildSpringMessage(message)
+            );
+            log.info("RocketMQ 发送消息成功: {}, msgId: {}",
+                    message.getMessageType(), result.getMsgId());
+        } catch (Exception e) {
+            log.error("RocketMQ 发送消息失败", e);
+            throw new RuntimeException("消息发送失败", e);
+        }
+    }
+
+    @Override
+    public void publish(String topic, Message<?> message) {
+        message.setTopic(topic);
+        publish(message);
+    }
+
+    @Override
+    public void publishAsync(Message<?> message) {
+        String destination = buildDestination(message);
+
+        rocketMQTemplate.asyncSend(destination, buildSpringMessage(message),
+                new SendCallback() {
+                    @Override
+                    public void onSuccess(SendResult sendResult) {
+                        log.info("RocketMQ 异步发送成功: {}", sendResult.getMsgId());
+                    }
+
+                    @Override
+                    public void onException(Throwable e) {
+                        log.error("RocketMQ 异步发送失败", e);
+                    }
+                });
+    }
+
+    @Override
+    public boolean isAvailable() {
+        try {
+            rocketMQTemplate.getProducer();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String buildDestination(Message<?> message) {
+        String topic = message.getTopic() != null ?
+                message.getTopic() : "traffic-default-topic";
+
+        String tag = message.getTag() != null ?
+                message.getTag() : "*";
+
+        return topic + ":" + tag;
+    }
+
+    private org.springframework.messaging.Message<?> buildSpringMessage(Message<?> message) {
+        return MessageBuilder
+                .withPayload(message.getPayload())
+                .setHeader("messageId", message.getMessageId())
+                .setHeader("messageType", message.getMessageType())
+                .setHeader("timestamp", message.getTimestamp())
+                .build();
+    }
+}
