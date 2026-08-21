@@ -1,14 +1,13 @@
 package com.greentraffic.core.service;
 
 import com.greentraffic.model.entity.traffic.TrafficMetric;
-import com.greentraffic.common.repository.TrafficDataRepository;  // 依赖接口，不是具体实现
+import com.greentraffic.core.port.outbound.TrafficDataRepository;  // 依赖接口，不是具体实现
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 交通数据查询服务

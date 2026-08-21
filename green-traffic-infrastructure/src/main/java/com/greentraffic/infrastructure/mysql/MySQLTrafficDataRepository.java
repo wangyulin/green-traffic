@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.mysql;
 
-import com.greentraffic.common.repository.TrafficDataRepository;
+import com.greentraffic.core.port.outbound.TrafficDataRepository;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

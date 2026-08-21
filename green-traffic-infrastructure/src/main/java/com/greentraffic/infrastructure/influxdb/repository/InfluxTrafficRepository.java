@@ -13,6 +13,7 @@ import com.influxdb.query.FluxTable;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import com.greentraffic.common.util.TimezoneUtils;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,13 +34,16 @@ public class InfluxTrafficRepository implements TrafficRepository {
     @Override
     public void save(TrafficMetric metric) {
 
+        Instant ts = metric.timestamp() == null ? Instant.now() : metric.timestamp();
+        ts = TimezoneUtils.normalizeInstant(ts);
+
         Point point = Point
                 .measurement("traffic_flow")
                 .addTag("road_id", metric.roadId())
                 .addTag("direction", metric.direction())
                 .addField("vehicle_count", metric.trafficFlow())
                 .addField("speed", metric.averageSpeed())
-                .time(metric.timestamp(), WritePrecision.S);
+            .time(ts, WritePrecision.S);
 
         WriteApiBlocking writeApi = client.getWriteApiBlocking();
 
@@ -60,9 +64,9 @@ public class InfluxTrafficRepository implements TrafficRepository {
                 """;
 
         String query = flux.formatted(
-                bucket,
-                start,
-                stop
+            bucket,
+            TimezoneUtils.formatForFlux(start),
+            TimezoneUtils.formatForFlux(stop)
         );
 
         List<FluxTable> tables =

@@ -4,7 +4,7 @@ import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.greentraffic.common.messaging.TrafficMessageTypes;
-import com.greentraffic.common.repository.TrafficDataRepository;
+import com.greentraffic.core.port.outbound.TrafficDataRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;

@@ -8,6 +8,7 @@ import com.influxdb.client.write.Point;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
+import com.greentraffic.common.util.TimezoneUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -112,9 +113,10 @@ public class InfluxDBBatchWriter {
      */
     private Point buildPoint(TrafficMetric data) {
         Instant timestamp = data.timestamp() == null ? Instant.now() : data.timestamp();
+        timestamp = TimezoneUtils.normalizeInstant(timestamp);
 
         return Point.measurement("traffic_data")
-                .time(timestamp, WritePrecision.MS)
+            .time(timestamp, WritePrecision.MS)
                 .addTag("road_id", data.roadId())
                 .addTag("vehicle_type", data.vehicleType())
                 .addTag("location", data.location())

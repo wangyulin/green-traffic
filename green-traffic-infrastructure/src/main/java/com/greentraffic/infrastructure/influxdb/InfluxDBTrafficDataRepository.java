@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.influxdb;
 
-import com.greentraffic.common.repository.TrafficDataRepository;
+import com.greentraffic.core.port.outbound.TrafficDataRepository;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.QueryApi;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
+import com.greentraffic.common.util.TimezoneUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -188,9 +188,10 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
      */
     private Point buildTrafficDataPoint(TrafficMetric data) {
         Instant timestamp = data.timestamp() == null ? Instant.now() : data.timestamp();
+        timestamp = TimezoneUtils.normalizeInstant(timestamp);
 
         return Point.measurement("traffic_data")
-                .time(timestamp, WritePrecision.MS)
+            .time(timestamp, WritePrecision.MS)
                 .addTag("road_id", data.roadId())
                 .addTag("vehicle_type", data.vehicleType())
                 .addTag("location", data.location())
@@ -297,10 +298,7 @@ public class InfluxDBTrafficDataRepository implements TrafficDataRepository {
      * 转换时间
      */
     private String formatTimeForFlux(Instant instant) {
-        if (instant == null) {
-            return "now()";
-        }
-        return instant.toString();
+        return TimezoneUtils.formatForFlux(instant);
     }
 
     /**

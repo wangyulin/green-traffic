@@ -15,6 +15,9 @@ import org.springframework.stereotype.Component;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import com.greentraffic.common.util.TimezoneUtils;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class CarbonEmissionEventListener {
@@ -32,9 +35,23 @@ public class CarbonEmissionEventListener {
     @EventListener
     public void onCarbonEmission(TrafficMetric event) {
         try {
-            logger.info("Spring Events message : {}", JSON.toJSONString(event));
-            Point p = Point.measurement("traffic_flow")
-                    .time(event.timestamp() == null ? Instant.now() : event.timestamp(), WritePrecision.S)
+            // 为了在日志中显示本地时区时间（例如 +08:00），先将 Instant 转为带时区偏移的字符串
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("roadId", event.roadId());
+            payload.put("direction", event.direction());
+            payload.put("averageSpeed", event.averageSpeed());
+            payload.put("co2Emission", event.co2Emission());
+            payload.put("trafficFlow", event.trafficFlow());
+            payload.put("vehicleType", event.vehicleType());
+            String tsStr = event.timestamp() == null ? null : TimezoneUtils.formatForFlux(event.timestamp());
+            payload.put("timestamp", tsStr);
+
+            logger.info("Spring Events message : {}", JSON.toJSONString(payload));
+                Instant ts = event.timestamp() == null ? Instant.now() : event.timestamp();
+                ts = TimezoneUtils.normalizeInstant(ts);
+
+                Point p = Point.measurement("traffic_flow")
+                    .time(ts, WritePrecision.S)
                     .addTag("road_id", event.roadId())
                     .addTag("direction", event.direction())
                     .addField("vehicle_count", event.trafficFlow())

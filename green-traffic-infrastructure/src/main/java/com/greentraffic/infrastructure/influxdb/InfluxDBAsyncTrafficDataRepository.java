@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import com.greentraffic.common.util.TimezoneUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -175,9 +176,6 @@ public class InfluxDBAsyncTrafficDataRepository implements AsyncTrafficDataRepos
     }
 
     private String formatTime(Instant instant) {
-        if (instant == null) {
-            return "now()";
-        }
-        return instant.toString();
+        return TimezoneUtils.formatForFlux(instant);
     }
 }

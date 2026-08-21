@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import com.greentraffic.common.util.TimezoneUtils;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
@@ -30,15 +31,14 @@ public class CarbonEmissionSimulator {
 
     @Scheduled(fixedDelayString = "${green-traffic.simulator.interval-ms:5000}")
     public void generateAndPublish() {
-        // int vehicleCount = ThreadLocalRandom.current().nextInt(100, 141);
-        // double speed = Math.round((ThreadLocalRandom.current().nextDouble(37.5, 47.5)) * 10.0) / 10.0;
-
         logger.info("碳排放仿真系统-定时任务-触发---");
-        // TODO: 调用 generator 生成模拟车流数据并发布/交给核心业务处理。
+        // 调用 generator 生成模拟车流数据并发布/交给核心业务处理。
         int vehicleCount = ThreadLocalRandom.current().nextInt(VEHICLE_COUNT_MIN, VEHICLE_COUNT_MAX + 1);
         double speed = ThreadLocalRandom.current().nextDouble(SPEED_MIN, SPEED_MAX);
 
         double co2 = Math.round((vehicleCount * 0.12 + ThreadLocalRandom.current().nextDouble(-1.0, 1.0)) * 100.0) / 100.0;
+
+        Instant ts = TimezoneUtils.normalizeInstant(Instant.now());
 
         TrafficMetric metric = new TrafficMetric(
             "ROAD-001",
@@ -48,7 +48,7 @@ public class CarbonEmissionSimulator {
             speed,
             co2,
             null,
-            Instant.now()
+            ts
         );
 
         publisher.publishEvent(metric);

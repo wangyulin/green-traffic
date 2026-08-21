@@ -1,6 +1,6 @@
 package com.greentraffic.api.config;
 
-import com.greentraffic.common.repository.TrafficDataRepository;
+import com.greentraffic.core.port.outbound.TrafficDataRepository;
 import com.greentraffic.infrastructure.influxdb.InfluxDBTrafficDataRepository;
 import com.greentraffic.infrastructure.mysql.MySQLTrafficDataRepository;
 import org.springframework.beans.factory.ObjectProvider;

@@ -1,4 +1,4 @@
-package com.greentraffic.common.repository;
+package com.greentraffic.core.port.outbound;
 
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 
