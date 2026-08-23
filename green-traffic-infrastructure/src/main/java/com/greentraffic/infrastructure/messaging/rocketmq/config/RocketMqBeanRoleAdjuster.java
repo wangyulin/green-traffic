@@ -5,12 +5,14 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 /**
  * 调整 RocketMQ 相关自动配置 Bean 的角色为 ROLE_INFRASTRUCTURE，
  * 避免被 BeanPostProcessorChecker 警告为未被全部后处理器处理。
  */
 @Configuration
+@ConditionalOnProperty(name = "messaging.type", havingValue = "rocketmq")
 public class RocketMqBeanRoleAdjuster implements BeanFactoryPostProcessor {
 
     @Override

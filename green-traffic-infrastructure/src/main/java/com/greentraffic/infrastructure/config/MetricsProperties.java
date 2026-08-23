@@ -9,13 +9,9 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "metrics")
 public class MetricsProperties {
-    /**
-     * Sink type: influx or vm
-     */
-    private String sink = "influx";
-
     private String influxUrl;
     private String vmUrl;
+    private String vmQueryUrl;
     private int batchSize = 500;
     /**
      * Max retry attempts for HTTP writes
@@ -46,14 +42,6 @@ public class MetricsProperties {
      */
     private String password;
 
-    public String getSink() {
-        return sink;
-    }
-
-    public void setSink(String sink) {
-        this.sink = sink;
-    }
-
     public String getInfluxUrl() {
         return influxUrl;
     }
@@ -68,6 +56,14 @@ public class MetricsProperties {
 
     public void setVmUrl(String vmUrl) {
         this.vmUrl = vmUrl;
+    }
+
+    public String getVmQueryUrl() {
+        return vmQueryUrl;
+    }
+
+    public void setVmQueryUrl(String vmQueryUrl) {
+        this.vmQueryUrl = vmQueryUrl;
     }
 
     public int getBatchSize() {

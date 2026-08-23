@@ -17,9 +17,9 @@ spring:
 
 # VictoriaMetrics environment overrides
 metrics:
-  sink: vm
   batch-size: ${METRICS_BATCH_SIZE:500}
   vm-url: ${VM_URL:http://127.0.0.1:8428/write}
+  vm-query-url: ${VM_QUERY_URL:http://127.0.0.1:8428/api/v1/query_range}
   auth-type: ${METRICS_AUTH_TYPE:none} # none | bearer | basic
   token: ${VM_TOKEN:}
   username: ${VM_USERNAME:}
@@ -34,8 +34,16 @@ metrics:
 
 # Disable InfluxDB in vm profile
 traffic:
-  influxdb:
-    enabled: false
+  storage:
+    type: victoria-metrics
 
 messaging:
-  type: events
+  type: rocketmq
+  rocketmq:
+    topic: ${ROCKETMQ_TOPIC:traffic-carbon}
+    consumer-group: ${ROCKETMQ_CONSUMER_GROUP:green-traffic-vm-consumer}
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:green-traffic-vm-producer}

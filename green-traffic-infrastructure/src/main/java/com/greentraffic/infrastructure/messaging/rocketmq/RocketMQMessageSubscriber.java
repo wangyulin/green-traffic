@@ -2,12 +2,12 @@ package com.greentraffic.infrastructure.messaging.rocketmq;
 
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
-import lombok.RequiredArgsConstructor;
+import com.greentraffic.common.messaging.TrafficMessageTypes;
+import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
-import org.apache.rocketmq.spring.core.RocketMQListener;
-import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -20,11 +20,10 @@ import java.util.function.Consumer;
  */
 @Slf4j
 @Component
-@Profile("test")
-@RequiredArgsConstructor
+@ConditionalOnProperty(name = "messaging.type", havingValue = "rocketmq")
 public class RocketMQMessageSubscriber implements MessageSubscriber {
 
-    private final RocketMQTemplate rocketMQTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
     private final Map<String, Consumer<Message<?>>> handlers = new ConcurrentHashMap<>();
 
     @Override
@@ -44,33 +43,29 @@ public class RocketMQMessageSubscriber implements MessageSubscriber {
         handlers.remove(subscriptionId);
     }
 
-    // 使用 RocketMQListener 处理消息
-    @Component
-    @Profile("test")
-    @RocketMQMessageListener(
-            topic = "traffic-default-topic",
-            consumerGroup = "traffic-consumer-group",
-            selectorExpression = "*"
-    )
-    public class TrafficMessageListener implements RocketMQListener<Object> {
-
-        @Override
-        public void onMessage(Object payload) {
-            // 构建统一消息
-            Message<Object> message = Message.builder()
-                    .payload(payload)
-                    .messageType("traffic.data")
-                    .build();
-
-            // 分发消息
-            dispatchMessage(message);
+    public void dispatchMessage(Message<?> message) {
+        Message<?> normalizedMessage = normalizeMetricPayload(message);
+        Consumer<Message<?>> handler = handlers.get(normalizedMessage.getMessageType());
+        if (handler != null) {
+            handler.accept(normalizedMessage);
         }
     }
 
-    private void dispatchMessage(Message<?> message) {
-        Consumer<Message<?>> handler = handlers.get(message.getMessageType());
-        if (handler != null) {
-            handler.accept(message);
+    private Message<?> normalizeMetricPayload(Message<?> message) {
+        if ((TrafficMessageTypes.TRAFFIC_DATA.equals(message.getMessageType())
+                || TrafficMessageTypes.CO2_EMISSION.equals(message.getMessageType()))
+                && !(message.getPayload() instanceof TrafficMetric)) {
+            Message<TrafficMetric> normalized = new Message<>();
+            normalized.setMessageId(message.getMessageId());
+            normalized.setMessageType(message.getMessageType());
+            normalized.setTopic(message.getTopic());
+            normalized.setTag(message.getTag());
+            normalized.setKey(message.getKey());
+            normalized.setHeaders(message.getHeaders());
+            normalized.setTimestamp(message.getTimestamp());
+            normalized.setPayload(objectMapper.convertValue(message.getPayload(), TrafficMetric.class));
+            return normalized;
         }
+        return message;
     }
 }

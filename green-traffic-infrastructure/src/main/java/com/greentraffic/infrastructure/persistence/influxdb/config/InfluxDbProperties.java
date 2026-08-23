@@ -23,4 +23,10 @@ public class InfluxDbProperties {
     private Duration readTimeout = Duration.ofSeconds(30);
 
     private Duration writeTimeout = Duration.ofSeconds(10);
+
+    private int batchSize = 100;
+
+    private long flushInterval = 5000;
+
+    private int retentionDays = 30;
 }

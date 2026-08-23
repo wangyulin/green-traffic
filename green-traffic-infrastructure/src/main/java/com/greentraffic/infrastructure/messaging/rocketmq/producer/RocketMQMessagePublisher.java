@@ -7,9 +7,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * RocketMQ 消息发布者
@@ -17,11 +18,14 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@Profile("test")
+@ConditionalOnProperty(name = "messaging.type", havingValue = "rocketmq")
 @RequiredArgsConstructor
 public class RocketMQMessagePublisher implements MessagePublisher {
 
     private final RocketMQTemplate rocketMQTemplate;
+
+    @Value("${messaging.rocketmq.topic:traffic-carbon}")
+    private String defaultTopic;
 
     @Override
     public void publish(Message<?> message) {
@@ -76,20 +80,17 @@ public class RocketMQMessagePublisher implements MessagePublisher {
 
     private String buildDestination(Message<?> message) {
         String topic = message.getTopic() != null ?
-                message.getTopic() : "traffic-default-topic";
+            message.getTopic() : defaultTopic;
 
         String tag = message.getTag() != null ?
-                message.getTag() : "*";
+            message.getTag() : message.getMessageType();
 
         return topic + ":" + tag;
     }
 
     private org.springframework.messaging.Message<?> buildSpringMessage(Message<?> message) {
         return MessageBuilder
-                .withPayload(message.getPayload())
-                .setHeader("messageId", message.getMessageId())
-                .setHeader("messageType", message.getMessageType())
-                .setHeader("timestamp", message.getTimestamp())
+            .withPayload(message)
                 .build();
     }
 }

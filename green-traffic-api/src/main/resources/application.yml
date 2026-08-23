@@ -20,9 +20,10 @@ spring:
 
 #
 
-# 存储类型配置
-storage:
-  type: ${STORAGE_TYPE:influxdb}  # influxdb 或 mysql
+# 指标存储类型：influx、victoria-metrics 或 mysql
+traffic:
+  storage:
+    type: ${TRAFFIC_STORAGE_TYPE:influx}
 
 #traffic:
 #  influxdb:
@@ -50,18 +51,3 @@ management:
   health:
     db:
       enabled: false
-
-# Metrics sink configuration: set metrics.sink to 'influx' or 'vm'
-#metrics:
-#  sink: ${METRICS_SINK:influx}
-#  batch-size: ${METRICS_BATCH_SIZE:500}
-#
-#  # Influx settings (example)
-#  influxUrl: ${INFLUX_URL:http://localhost:8086/write?db=green-traffic&precision=ns}
-#  authType: ${METRICS_AUTH_TYPE:none}
-#  token: ${METRICS_TOKEN:}
-#  username: ${METRICS_USERNAME:}
-#  password: ${METRICS_PASSWORD:}
-#
-#  # VictoriaMetrics settings (example)
-#  vmUrl: ${VM_URL:http://localhost:8428/write}

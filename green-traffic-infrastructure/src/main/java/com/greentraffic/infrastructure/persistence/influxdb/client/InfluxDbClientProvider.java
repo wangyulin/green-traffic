@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Component
-@ConditionalOnProperty(prefix = "traffic.influxdb", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "influx")
 public class InfluxDbClientProvider {
 
     private final InfluxDBClient client;

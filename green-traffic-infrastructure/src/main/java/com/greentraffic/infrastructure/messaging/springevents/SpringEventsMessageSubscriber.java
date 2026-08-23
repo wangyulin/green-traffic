@@ -3,7 +3,7 @@ package com.greentraffic.infrastructure.messaging.springevents;
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  */
 @Slf4j
 @Component
-@Profile("dev")
+@ConditionalOnProperty(name = "messaging.type", havingValue = "events", matchIfMissing = true)
 public class SpringEventsMessageSubscriber implements MessageSubscriber {
 
     private final Map<String, Consumer<Message<?>>> handlers = new ConcurrentHashMap<>();

@@ -1,21 +1,20 @@
 package com.greentraffic.simulator;
 
-import com.greentraffic.core.repository.TrafficRepository;
+import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
+import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
-@ConditionalOnBean(TrafficRepository.class)
 public class TrafficSensorSimulator {
 
-    private final TrafficRepository repository;
+    private final WriteTrafficMetricUseCase writeUseCase;
 
     // 模拟参数：基于当前代码中的示例值（120, 42.5），设置小幅波动范围
     private static final int VEHICLE_COUNT_MIN = 100;
@@ -25,8 +24,8 @@ public class TrafficSensorSimulator {
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    public TrafficSensorSimulator(TrafficRepository repository) {
-        this.repository = repository;
+    public TrafficSensorSimulator(WriteTrafficMetricUseCase writeUseCase) {
+        this.writeUseCase = writeUseCase;
     }
 
     // @Scheduled(fixedDelayString = "${green-traffic.simulator.interval-ms:5000}")
@@ -50,6 +49,6 @@ public class TrafficSensorSimulator {
             Instant.now()
         );
 
-        repository.save(metric);
+        writeUseCase.write(WriteTrafficMetricCommand.from(metric));
     }
 }

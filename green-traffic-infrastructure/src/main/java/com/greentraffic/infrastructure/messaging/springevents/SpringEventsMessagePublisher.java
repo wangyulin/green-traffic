@@ -5,7 +5,7 @@ import com.greentraffic.common.messaging.MessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@Profile("dev")
+@ConditionalOnProperty(name = "messaging.type", havingValue = "events", matchIfMissing = true)
 @RequiredArgsConstructor
 public class SpringEventsMessagePublisher implements MessagePublisher {
 

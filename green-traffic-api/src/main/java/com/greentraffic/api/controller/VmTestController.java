@@ -1,7 +1,7 @@
 package com.greentraffic.api.controller;
 
-import com.greentraffic.core.application.MetricService;
-import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
+import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,18 +12,18 @@ import java.time.Instant;
 import java.util.List;
 
 @RestController
-@ConditionalOnProperty(name = "metrics.sink", havingValue = "vm")
+@ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "victoria-metrics")
 @RequestMapping("test/vm")
 public class VmTestController {
-    private final MetricService metricService;
+    private final WriteTrafficMetricUseCase writeUseCase;
 
-    public VmTestController(MetricService metricService) {
-        this.metricService = metricService;
+    public VmTestController(WriteTrafficMetricUseCase writeUseCase) {
+        this.writeUseCase = writeUseCase;
     }
 
     @PostMapping("/write")
     public String write() {
-        TrafficMetric metric = new TrafficMetric(
+        WriteTrafficMetricCommand command = new WriteTrafficMetricCommand(
                 "ROAD-VM-001",
                 "NORTH",
                 "CAR",
@@ -34,7 +34,7 @@ public class VmTestController {
                 Instant.now()
         );
 
-        metricService.write(metric);
+        writeUseCase.write(command);
         return "OK";
     }
 

@@ -20,12 +20,10 @@ spring:
       max-lifetime: 1800000
       pool-name: MySQLConnectionPool
 
-storage:
-  type: influxdb
-
 traffic:
+  storage:
+    type: influx
   influxdb:
-    enabled: true
     url: ${INFLUXDB_URL:http://localhost:8086}
     token: ${INFLUXDB_TOKEN:mi1ZhIYdLj3kF0GxEpcR3IWVwHLxylVY5Fhf5gtOZ18dF7j5i6P9PslgpWRge5czcS0nVoFBYANDkMMnJRwI5Q==}
     org: ${INFLUXDB_ORG:wyl}
@@ -33,6 +31,15 @@ traffic:
     connect-timeout: 10s
     read-timeout: 30s
     write-timeout: 10s
+
+metrics:
+  batch-size: ${METRICS_BATCH_SIZE:500}
+  influx-url: ${INFLUX_URL:http://localhost:8086/api/v2/write?org=${INFLUXDB_ORG:wyl}&bucket=${INFLUXDB_BUCKET:green-traffic}&precision=ns}
+  auth-type: bearer
+  token: ${INFLUXDB_TOKEN:mi1ZhIYdLj3kF0GxEpcR3IWVwHLxylVY5Fhf5gtOZ18dF7j5i6P9PslgpWRge5czcS0nVoFBYANDkMMnJRwI5Q==}
+  max-retries: ${METRICS_MAX_RETRIES:3}
+  retry-initial-delay-ms: ${METRICS_RETRY_INITIAL_DELAY_MS:500}
+  flush-interval-ms: ${METRICS_FLUSH_INTERVAL_MS:2000}
 
 # 消息配置：开发环境使用 Spring Events
 messaging:
