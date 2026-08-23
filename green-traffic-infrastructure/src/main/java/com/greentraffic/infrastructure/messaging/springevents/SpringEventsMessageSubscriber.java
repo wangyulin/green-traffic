@@ -1,5 +1,7 @@
 package com.greentraffic.infrastructure.messaging.springevents;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,8 @@ import java.util.function.Consumer;
 @Component
 @ConditionalOnProperty(name = "messaging.type", havingValue = "events", matchIfMissing = true)
 public class SpringEventsMessageSubscriber implements MessageSubscriber {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
 
     private final Map<String, Consumer<Message<?>>> handlers = new ConcurrentHashMap<>();
 
@@ -41,6 +45,12 @@ public class SpringEventsMessageSubscriber implements MessageSubscriber {
 
     @EventListener
     public void onMessage(MessageEvent event) {
+        try {
+            String s = OBJECT_MAPPER.writeValueAsString(event);
+            log.info("接收到消息 {}", s);
+        } catch (JsonProcessingException e) {
+            log.info("接收到消息 (序列化失败) {}", event.toString());
+        }
         Message<?> message = event.getMessage();
 
         // 根据消息类型分发

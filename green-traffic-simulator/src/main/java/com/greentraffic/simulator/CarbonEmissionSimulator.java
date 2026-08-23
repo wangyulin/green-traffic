@@ -4,6 +4,9 @@ import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import com.greentraffic.common.messaging.Message;
+import com.greentraffic.common.messaging.MessagePublisher;
+import com.greentraffic.common.messaging.TrafficMessageTypes;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +18,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @Component
 public class CarbonEmissionSimulator {
 
-    private final ApplicationEventPublisher publisher;
+    private final MessagePublisher messagePublisher;
 
     private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -25,8 +28,8 @@ public class CarbonEmissionSimulator {
     private static final double SPEED_MIN = 37.5;
     private static final double SPEED_MAX = 47.5;
 
-    public CarbonEmissionSimulator(ApplicationEventPublisher publisher) {
-        this.publisher = publisher;
+    public CarbonEmissionSimulator(MessagePublisher messagePublisher) {
+        this.messagePublisher = messagePublisher;
     }
 
     @Scheduled(fixedDelayString = "${green-traffic.simulator.interval-ms:5000}")
@@ -51,6 +54,9 @@ public class CarbonEmissionSimulator {
             ts
         );
 
-        publisher.publishEvent(metric);
+        // Send via MessagePublisher (implementation chosen by Spring via messaging.type)
+        Message<com.greentraffic.model.entity.traffic.TrafficMetric> msg = Message.of(TrafficMessageTypes.CO2_EMISSION, metric);
+        messagePublisher.publish(msg);
+        logger.debug("Published simulated metric via MessagePublisher: {}", msg.getMessageId());
     }
 }

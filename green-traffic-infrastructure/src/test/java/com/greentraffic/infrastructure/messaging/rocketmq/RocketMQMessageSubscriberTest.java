@@ -2,6 +2,7 @@ package com.greentraffic.infrastructure.messaging.rocketmq;
 
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.TrafficMessageTypes;
+import com.greentraffic.infrastructure.messaging.rocketmq.consumer.RocketMQMessageSubscriber;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.junit.jupiter.api.Test;
 

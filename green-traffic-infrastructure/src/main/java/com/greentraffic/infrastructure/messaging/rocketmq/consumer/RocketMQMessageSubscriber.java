@@ -1,4 +1,4 @@
-package com.greentraffic.infrastructure.messaging.rocketmq;
+package com.greentraffic.infrastructure.messaging.rocketmq.consumer;
 
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
@@ -6,7 +6,6 @@ import com.greentraffic.common.messaging.TrafficMessageTypes;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
