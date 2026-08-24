@@ -1,4 +1,6 @@
-package com.greentraffic.common.port.metrics;
+package com.greentraffic.core.port.output;
+
+import com.greentraffic.core.port.output.metrics.MetricPoint;
 
 import java.util.List;
 

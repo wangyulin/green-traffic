@@ -1,10 +1,8 @@
 package com.greentraffic.infrastructure.messaging.rocketmq;
 
-import com.greentraffic.common.messaging.MessagePublisher;
+import com.greentraffic.core.port.output.messaging.MessagePublisher;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,8 +40,8 @@ public class RocketMQVmBeanAssemblyTest {
         }
 
         @org.springframework.context.annotation.Bean
-        public com.greentraffic.common.messaging.MessagePublisher messagePublisher(org.apache.rocketmq.spring.core.RocketMQTemplate template) {
-            return new com.greentraffic.common.messaging.MessagePublisher() {
+        public MessagePublisher messagePublisher(org.apache.rocketmq.spring.core.RocketMQTemplate template) {
+            return new MessagePublisher() {
                 @Override
                 public void publish(com.greentraffic.common.messaging.Message<?> message) {
                     throw new UnsupportedOperationException("not needed for this test");
@@ -82,7 +80,7 @@ public class RocketMQVmBeanAssemblyTest {
             ctx.register(TestConfig.class);
             ctx.refresh();
 
-            com.greentraffic.common.messaging.MessagePublisher pub = ctx.getBean(com.greentraffic.common.messaging.MessagePublisher.class);
+            MessagePublisher pub = ctx.getBean(MessagePublisher.class);
             assertNotNull(pub, "MessagePublisher bean should be present in vm profile");
             boolean avail = pub.isAvailable();
             assertTrue(avail || !avail, "publisher.isAvailable() invoked");

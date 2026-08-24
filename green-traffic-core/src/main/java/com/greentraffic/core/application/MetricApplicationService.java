@@ -1,7 +1,7 @@
 package com.greentraffic.core.application;
 
-import com.greentraffic.common.port.metrics.MetricPoint;
-import com.greentraffic.common.port.metrics.MetricWritePort;
+import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.port.output.MetricWritePort;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import org.springframework.stereotype.Service;

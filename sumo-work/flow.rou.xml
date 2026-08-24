@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<routes>
+  <vType id="passenger" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="13.89"/>
+  <flow id="flow_0" type="passenger" begin="0" end="300" from="A0A1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_1" type="passenger" begin="0" end="300" from="A0B0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_2" type="passenger" begin="0" end="300" from="A0bottom0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_3" type="passenger" begin="0" end="300" from="A0left0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_4" type="passenger" begin="0" end="300" from="A1A0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_5" type="passenger" begin="0" end="300" from="A1B1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_6" type="passenger" begin="0" end="300" from="A1left1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_7" type="passenger" begin="0" end="300" from="A1top0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_8" type="passenger" begin="0" end="300" from="B0A0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_9" type="passenger" begin="0" end="300" from="B0B1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_10" type="passenger" begin="0" end="300" from="B0bottom1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_11" type="passenger" begin="0" end="300" from="B0right0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_12" type="passenger" begin="0" end="300" from="B1A1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_13" type="passenger" begin="0" end="300" from="B1B0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_14" type="passenger" begin="0" end="300" from="B1right1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_15" type="passenger" begin="0" end="300" from="B1top1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_16" type="passenger" begin="0" end="300" from="bottom0A0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_17" type="passenger" begin="0" end="300" from="bottom1B0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_18" type="passenger" begin="0" end="300" from="left0A0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_19" type="passenger" begin="0" end="300" from="left1A1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_20" type="passenger" begin="0" end="300" from="right0B0" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_21" type="passenger" begin="0" end="300" from="right1B1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_22" type="passenger" begin="0" end="300" from="top0A1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+  <flow id="flow_23" type="passenger" begin="0" end="300" from="top1B1" departLane="0" departSpeed="max" vehsPerHour="300"/>
+</routes>

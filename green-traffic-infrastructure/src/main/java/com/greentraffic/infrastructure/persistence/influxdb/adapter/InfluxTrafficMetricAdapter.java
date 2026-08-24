@@ -1,8 +1,8 @@
 package com.greentraffic.infrastructure.persistence.influxdb.adapter;
 
-import com.greentraffic.common.port.metrics.MetricPoint;
-import com.greentraffic.common.port.metrics.MetricQueryPort;
-import com.greentraffic.common.port.metrics.MetricWritePort;
+import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.port.output.MetricQueryPort;
+import com.greentraffic.core.port.output.MetricWritePort;
 import com.greentraffic.infrastructure.persistence.influxdb.client.InfluxDbClientProvider;
 import com.greentraffic.infrastructure.persistence.influxdb.config.InfluxDbProperties;
 import com.influxdb.client.InfluxDBClient;

@@ -1,8 +1,8 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
-import com.greentraffic.common.port.metrics.MetricPoint;
-import com.greentraffic.common.port.metrics.MetricQueryPort;
-import com.greentraffic.common.port.metrics.MetricWritePort;
+import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.port.output.MetricQueryPort;
+import com.greentraffic.core.port.output.MetricWritePort;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

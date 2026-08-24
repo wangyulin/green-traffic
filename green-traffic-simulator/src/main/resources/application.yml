@@ -1,0 +1,22 @@
+# SUMO配置
+sumo:
+  # Docker镜像
+  docker-image: ghcr.io/eclipse-sumo/sumo:latest
+  # 工作目录
+  work-dir: /tmp/sumo
+  # 仿真配置
+  simulation:
+    # 仿真时长（秒）
+    duration: 120
+    # 步长（秒）
+    step-length: 0.1
+    # 网格大小
+    grid-number: 2
+    # 网格长度
+    grid-length: 300
+  # TraCI配置
+  traci:
+    # TraCI端口
+    port: 8813
+    # 是否启用
+    enabled: true

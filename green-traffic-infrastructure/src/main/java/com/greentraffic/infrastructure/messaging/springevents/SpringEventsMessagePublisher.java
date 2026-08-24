@@ -1,7 +1,7 @@
 package com.greentraffic.infrastructure.messaging.springevents;
 
 import com.greentraffic.common.messaging.Message;
-import com.greentraffic.common.messaging.MessagePublisher;
+import com.greentraffic.core.port.output.messaging.MessagePublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;

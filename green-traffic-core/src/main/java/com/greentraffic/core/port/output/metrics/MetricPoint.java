@@ -1,4 +1,4 @@
-package com.greentraffic.common.port.metrics;
+package com.greentraffic.core.port.output.metrics;
 
 import java.time.Instant;
 import java.util.Objects;

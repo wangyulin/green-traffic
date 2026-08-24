@@ -3,6 +3,7 @@ package com.greentraffic.infrastructure.messaging.rocketmq.consumer;
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.MessageSubscriber;
 import com.greentraffic.common.messaging.TrafficMessageTypes;
+import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -51,20 +52,29 @@ public class RocketMQMessageSubscriber implements MessageSubscriber {
     }
 
     private Message<?> normalizeMetricPayload(Message<?> message) {
-        if ((TrafficMessageTypes.TRAFFIC_DATA.equals(message.getMessageType())
-                || TrafficMessageTypes.CO2_EMISSION.equals(message.getMessageType()))
-                && !(message.getPayload() instanceof TrafficMetric)) {
-            Message<TrafficMetric> normalized = new Message<>();
-            normalized.setMessageId(message.getMessageId());
-            normalized.setMessageType(message.getMessageType());
-            normalized.setTopic(message.getTopic());
-            normalized.setTag(message.getTag());
-            normalized.setKey(message.getKey());
-            normalized.setHeaders(message.getHeaders());
-            normalized.setTimestamp(message.getTimestamp());
-            normalized.setPayload(objectMapper.convertValue(message.getPayload(), TrafficMetric.class));
-            return normalized;
+        if (message.getPayload() instanceof TrafficMetric || message.getPayload() instanceof SimulationTrafficMetric) {
+            return message;
+        }
+        if (TrafficMessageTypes.TRAFFIC_DATA.equals(message.getMessageType())
+                || TrafficMessageTypes.CO2_EMISSION.equals(message.getMessageType())) {
+            return withPayload(message, objectMapper.convertValue(message.getPayload(), TrafficMetric.class));
+        }
+        if (TrafficMessageTypes.TRAFFIC_DATA_BATCH.equals(message.getMessageType())) {
+            return withPayload(message, objectMapper.convertValue(message.getPayload(), SimulationTrafficMetric.class));
         }
         return message;
+    }
+
+    private <T> Message<T> withPayload(Message<?> source, T payload) {
+        Message<T> normalized = new Message<>();
+        normalized.setMessageId(source.getMessageId());
+        normalized.setMessageType(source.getMessageType());
+        normalized.setTopic(source.getTopic());
+        normalized.setTag(source.getTag());
+        normalized.setKey(source.getKey());
+        normalized.setHeaders(source.getHeaders());
+        normalized.setTimestamp(source.getTimestamp());
+        normalized.setPayload(payload);
+        return normalized;
     }
 }

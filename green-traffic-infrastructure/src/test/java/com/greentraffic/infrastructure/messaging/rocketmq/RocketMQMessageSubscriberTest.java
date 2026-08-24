@@ -3,6 +3,7 @@ package com.greentraffic.infrastructure.messaging.rocketmq;
 import com.greentraffic.common.messaging.Message;
 import com.greentraffic.common.messaging.TrafficMessageTypes;
 import com.greentraffic.infrastructure.messaging.rocketmq.consumer.RocketMQMessageSubscriber;
+import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.junit.jupiter.api.Test;
 
@@ -48,5 +49,31 @@ class RocketMQMessageSubscriberTest {
         subscriber.dispatchMessage(Message.of(TrafficMessageTypes.TRAFFIC_DATA, metric));
 
         assertThat(received.get().getPayload()).isSameAs(metric);
+    }
+
+    @Test
+    void convertsDeserializedSimulationMetricPayloadBeforeDispatching() {
+        RocketMQMessageSubscriber subscriber = new RocketMQMessageSubscriber();
+        AtomicReference<Message<?>> received = new AtomicReference<>();
+        subscriber.subscribe(TrafficMessageTypes.TRAFFIC_DATA_BATCH, received::set);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("simulationId", "sim-1");
+        payload.put("roadId", "SUMO-GRID");
+        payload.put("direction", "UNKNOWN");
+        payload.put("vehicleType", "passenger");
+        payload.put("vehicleCount", 2);
+        payload.put("averageSpeed", 45.0);
+        payload.put("totalCo2Emission", 0.08);
+        payload.put("averageTravelTime", 15.0);
+        payload.put("averageWaitingTime", 3.0);
+        payload.put("averageTimeLoss", 4.0);
+        payload.put("totalRouteLength", 400.0);
+        payload.put("timestamp", "2026-08-23T08:00:00Z");
+
+        subscriber.dispatchMessage(Message.of(TrafficMessageTypes.TRAFFIC_DATA_BATCH, payload));
+
+        assertThat(received.get().getPayload()).isInstanceOf(SimulationTrafficMetric.class);
+        assertThat(((SimulationTrafficMetric) received.get().getPayload()).simulationId()).isEqualTo("sim-1");
     }
 }
