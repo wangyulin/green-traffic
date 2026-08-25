@@ -32,6 +32,13 @@ public class ApiResponse<T> {
                 .build();
     }
 
+    // 成功响应（自定义消息）
+    public static <T> ApiResponse<T> success() {
+        return ApiResponse.<T>builder()
+                .code(200)
+                .build();
+    }
+
     // 失败响应
     public static <T> ApiResponse<T> error(int code, String message) {
         return ApiResponse.<T>builder()

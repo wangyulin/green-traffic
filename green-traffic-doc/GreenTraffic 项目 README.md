@@ -917,32 +917,6 @@ GreenTraffic
 
 ---
 
-## ⚠️ 当前已知事项
-
-当前仓库仍处于持续完善阶段，部分设计文档与代码实现可能存在演进差异。
-
-例如消息类型定义已经从：
-
-```text
-green-traffic-common
-```
-
-逐步迁移到：
-
-```text
-green-traffic-core
-└── port
-    └── output
-        └── messaging
-            └── TrafficMessageTypes
-```
-
-旧定义暂时保留并标记为 `@Deprecated`。
-
-因此，以**当前代码实现和实际模块结构**为最终准则。
-
----
-
 ## 🤝 Contribution
 
 欢迎通过以下方式参与项目：

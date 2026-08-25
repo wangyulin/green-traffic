@@ -7,7 +7,7 @@ import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
-import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;

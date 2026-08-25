@@ -4,7 +4,7 @@ import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import com.greentraffic.infrastructure.messaging.converter.MessagePayloadConverter;
 import com.greentraffic.infrastructure.messaging.rocketmq.consumer.RocketMQMessageSubscriber;
-import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

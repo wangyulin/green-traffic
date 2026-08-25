@@ -1,4 +1,4 @@
-package com.greentraffic.model.entity.traffic;
+package com.greentraffic.core.domain.traffic;
 
 import java.time.Instant;
 

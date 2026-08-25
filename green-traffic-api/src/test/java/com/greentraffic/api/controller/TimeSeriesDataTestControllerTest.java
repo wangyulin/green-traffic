@@ -3,7 +3,7 @@ package com.greentraffic.api.controller;
 import com.greentraffic.core.port.input.QueryTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

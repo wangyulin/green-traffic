@@ -5,7 +5,7 @@ import com.greentraffic.core.port.output.messaging.MessageSubscriber;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

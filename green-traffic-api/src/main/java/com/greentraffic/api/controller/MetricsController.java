@@ -1,8 +1,8 @@
 package com.greentraffic.api.controller;
 
 import com.greentraffic.api.controller.request.TrafficMetricWriteRequest;
+import com.greentraffic.common.api.ApiResponse;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +18,8 @@ public class MetricsController {
     }
 
     @PostMapping("/write")
-    public ResponseEntity<String> write(@RequestBody TrafficMetricWriteRequest request) {
+    public ApiResponse<String> write(@RequestBody TrafficMetricWriteRequest request) {
         writeUseCase.write(request.toCommand());
-        return ResponseEntity.ok("accepted");
+        return ApiResponse.success();
     }
 }

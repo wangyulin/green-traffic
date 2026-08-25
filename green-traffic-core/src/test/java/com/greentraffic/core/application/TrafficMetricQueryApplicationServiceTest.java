@@ -2,7 +2,7 @@ package com.greentraffic.core.application;
 
 import com.greentraffic.core.port.output.metrics.MetricPoint;
 import com.greentraffic.core.port.output.MetricQueryPort;
-import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

@@ -3,7 +3,7 @@ package com.greentraffic.infrastructure.messaging.converter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
-import com.greentraffic.model.entity.traffic.TrafficMetric;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 
 import java.util.Set;
 
