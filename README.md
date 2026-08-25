@@ -1712,15 +1712,6 @@ spring:
       minimum-idle: 2
       connection-timeout: 30000
   
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
-  
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
@@ -1765,11 +1756,6 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
 
 simulator:
   interval-ms: 3000  # 演示时加快频率，3秒一次

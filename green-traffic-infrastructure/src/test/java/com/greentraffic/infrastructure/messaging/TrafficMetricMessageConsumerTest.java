@@ -24,7 +24,8 @@ class TrafficMetricMessageConsumerTest {
     void subscribesTrafficMessagesAndForwardsMetricPayloadsToWriteUseCase() {
         MessageSubscriber messageSubscriber = mock(MessageSubscriber.class);
         WriteTrafficMetricUseCase writeUseCase = mock(WriteTrafficMetricUseCase.class);
-        TrafficMetricMessageConsumer consumer = new TrafficMetricMessageConsumer(messageSubscriber, writeUseCase);
+        com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase writeSimulationUseCase = mock(com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase.class);
+        TrafficMetricMessageConsumer consumer = new TrafficMetricMessageConsumer(messageSubscriber, writeUseCase, writeSimulationUseCase);
 
         consumer.subscribe();
 
@@ -49,13 +50,23 @@ class TrafficMetricMessageConsumerTest {
                 TrafficMessageTypes.TRAFFIC_DATA,
                 TrafficMessageTypes.CO2_EMISSION
         );
+
+        // also ensure SimulationTrafficMetric payloads on CO2_EMISSION are forwarded
+        com.greentraffic.model.entity.traffic.SimulationTrafficMetric sim = new com.greentraffic.model.entity.traffic.SimulationTrafficMetric(
+            "sim-1", "ROAD-001", "EAST", "CAR", 10, 40.0, 0.5, 5.0, 0.5, 0.2, 15000.0, Instant.parse("2026-08-22T10:00:00Z")
+        );
+        handlers.get(TrafficMessageTypes.CO2_EMISSION)
+            .accept(Message.of(TrafficMessageTypes.CO2_EMISSION, sim));
+
+        verify(writeSimulationUseCase).write(com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand.from(sim));
     }
 
     @Test
     void ignoresNonMetricPayloads() {
         MessageSubscriber messageSubscriber = mock(MessageSubscriber.class);
         WriteTrafficMetricUseCase writeUseCase = mock(WriteTrafficMetricUseCase.class);
-        TrafficMetricMessageConsumer consumer = new TrafficMetricMessageConsumer(messageSubscriber, writeUseCase);
+        com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase writeSimulationUseCase = mock(com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase.class);
+        TrafficMetricMessageConsumer consumer = new TrafficMetricMessageConsumer(messageSubscriber, writeUseCase, writeSimulationUseCase);
 
         consumer.subscribe();
 

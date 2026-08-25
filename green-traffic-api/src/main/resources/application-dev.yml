@@ -54,7 +54,7 @@ green-traffic:
   sumo:
     enabled: ${SUMO_ENABLED:true}
     working-directory: ${SUMO_WORKING_DIRECTORY:./sumo-work}
-    interval-ms: ${SUMO_INTERVAL_MS:10000}
+    interval-ms: ${SUMO_INTERVAL_MS:5000}
     duration-seconds: ${SUMO_DURATION_SECONDS:300}
     vehicles-per-hour: ${SUMO_VEHICLES_PER_HOUR:300}
 

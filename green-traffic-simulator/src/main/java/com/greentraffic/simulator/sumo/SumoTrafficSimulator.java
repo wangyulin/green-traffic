@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.ObjectMapper;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
@@ -30,16 +31,19 @@ public class SumoTrafficSimulator {
     private final MessagePublisher messagePublisher;
     private final SumoSimulatorProperties properties;
 
+    private final ObjectMapper objectMapper;
+
     public SumoTrafficSimulator(
             SimulationEnginePort sumoSimulationPort,
             MessagePublisher messagePublisher,
-            SumoSimulatorProperties properties) {
+            SumoSimulatorProperties properties, ObjectMapper objectMapper) {
         this.sumoSimulationPort = sumoSimulationPort;
         this.messagePublisher = messagePublisher;
         this.properties = properties;
+        this.objectMapper = objectMapper;
     }
 
-    @Scheduled(fixedDelayString = "${green-traffic.sumo.interval-ms:10000}")
+    // @Scheduled(fixedDelayString = "${green-traffic.sumo.interval-ms:5000}")
     public void simulateAndPublish() {
         logger.info("SUMO仿真系统-定时任务-触发---");
         String simulationId = UUID.randomUUID().toString();
@@ -48,7 +52,14 @@ public class SumoTrafficSimulator {
                 properties.getWorkingDirectory(),
                 properties.getDurationSeconds(),
                 properties.getVehiclesPerHour()));
+
+        String trips_json = objectMapper.writeValueAsString(trips);
+        // logger.info("SUMO 当前生成的数据 trips : {}", trips_json);
         SimulationTrafficMetric metric = SumoTrafficMetricMapper.map(simulationId, trips, Instant.now());
+
+        String metric_json = objectMapper.writeValueAsString(metric);
+        logger.info("SUMO 当前生成的数据 metric : {}", metric_json);
+
         if (metric != null) {
             try {
                 messagePublisher.publishAsync(Message.of(TrafficMessageTypes.TRAFFIC_DATA_BATCH, metric));

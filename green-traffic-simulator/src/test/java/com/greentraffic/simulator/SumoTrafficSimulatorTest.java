@@ -10,6 +10,7 @@ import com.greentraffic.simulator.sumo.SumoSimulatorProperties;
 import com.greentraffic.simulator.sumo.SumoTrafficSimulator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -26,6 +27,7 @@ class SumoTrafficSimulatorTest {
     void publishesAggregatedSumaResultThroughTheMessagePort() {
         SimulationEnginePort sumoPort = mock(SimulationEnginePort.class);
         MessagePublisher messagePublisher = mock(MessagePublisher.class);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
         when(sumoPort.run(any())).thenReturn(List.of(
                 new SumoTripInfo("car-1", "passenger", 10, 2, 3, 100),
                 new SumoTripInfo("car-2", "passenger", 20, 4, 5, 300)));
@@ -33,7 +35,7 @@ class SumoTrafficSimulatorTest {
         properties.setWorkingDirectory(Path.of("build/test-sumo"));
         properties.setDurationSeconds(60);
         properties.setVehiclesPerHour(120);
-        SumoTrafficSimulator simulator = new SumoTrafficSimulator(sumoPort, messagePublisher, properties);
+        SumoTrafficSimulator simulator = new SumoTrafficSimulator(sumoPort, messagePublisher, properties, objectMapper);
 
         simulator.simulateAndPublish();
 
