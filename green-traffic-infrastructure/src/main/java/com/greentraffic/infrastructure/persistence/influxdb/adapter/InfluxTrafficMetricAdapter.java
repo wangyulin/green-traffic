@@ -3,6 +3,7 @@ package com.greentraffic.infrastructure.persistence.influxdb.adapter;
 import com.greentraffic.core.port.output.metrics.MetricPoint;
 import com.greentraffic.core.port.output.MetricQueryPort;
 import com.greentraffic.core.port.output.MetricWritePort;
+import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import com.greentraffic.infrastructure.persistence.influxdb.client.InfluxDbClientProvider;
 import com.greentraffic.infrastructure.persistence.influxdb.config.InfluxDbProperties;
 import com.influxdb.client.InfluxDBClient;
@@ -45,20 +46,31 @@ public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryP
     }
 
     @Override
-    public List<MetricPoint> query(Instant from, Instant to, Map<String, String> tags) {
+    public List<MetricPoint> query(TrafficMetricQuery query) {
+
         String flux = """
                 from(bucket: "%s")
                   |> range(start: %s, stop: %s)
                   |> filter(fn: (r) => r._measurement == "%s")
-            """.formatted(
+                  |> pivot(
+                      rowKey: ["_time"],
+                      columnKey: ["_field"],
+                      valueColumn: "_value"
+                  )
+                """.formatted(
                 escapeFlux(properties.getBucket()),
-                from,
-                to,
+                query.from(),
+                query.to(),
                 MEASUREMENT
-        ) + tagFilters(tags) + "  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n";
+        );
+
         List<MetricPoint> result = new ArrayList<>();
-        for (FluxTable table : client.getQueryApi().query(flux, properties.getOrg())) {
+
+        for (FluxTable table :
+                client.getQueryApi().query(flux, properties.getOrg())) {
+
             for (FluxRecord record : table.getRecords()) {
+
                 result.add(new MetricPoint(
                         stringValue(record, "roadId"),
                         stringValue(record, "direction"),
@@ -71,6 +83,7 @@ public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryP
                 ));
             }
         }
+
         return result;
     }
 

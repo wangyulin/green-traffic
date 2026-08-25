@@ -3,6 +3,7 @@ package com.greentraffic.infrastructure.persistence.metrics;
 import com.greentraffic.core.port.output.metrics.MetricPoint;
 import com.greentraffic.core.port.output.MetricQueryPort;
 import com.greentraffic.core.port.output.MetricWritePort;
+import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
-import java.util.Map;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -76,21 +76,41 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
     }
 
     @Override
-    public List<MetricPoint> query(Instant from, Instant to, Map<String, String> tags) {
+    public List<MetricPoint> query(TrafficMetricQuery query) {
+
         String queryUrl = props.getVmQueryUrl();
+
         if (queryUrl == null || queryUrl.isBlank()) {
-            throw new IllegalStateException("metrics.vmQueryUrl must be configured for VictoriaMetrics queries");
+            throw new IllegalStateException(
+                    "metrics.vmQueryUrl must be configured for VictoriaMetrics queries"
+            );
         }
-        String query = promqlSelector(tags);
+
+        String promql = buildPromQl();
+
         try {
-            String url = queryUrl + "?query=" + java.net.URLEncoder.encode(query, StandardCharsets.UTF_8)
-                    + "&start=" + from.getEpochSecond()
-                    + "&end=" + to.getEpochSecond()
+            String url = queryUrl
+                    + "?query="
+                    + java.net.URLEncoder.encode(
+                    promql,
+                    StandardCharsets.UTF_8
+            )
+                    + "&start="
+                    + query.from().getEpochSecond()
+                    + "&end="
+                    + query.to().getEpochSecond()
                     + "&step=1m";
-            JsonNode result = rest.getForObject(url, JsonNode.class);
+
+            JsonNode result =
+                    rest.getForObject(url, JsonNode.class);
+
             return toMetricPoints(result);
+
         } catch (Exception exception) {
-            throw new IllegalStateException("VictoriaMetrics metric query failed", exception);
+            throw new IllegalStateException(
+                    "VictoriaMetrics metric query failed",
+                    exception
+            );
         }
     }
 
@@ -128,24 +148,8 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
         }
     }
 
-    private String promqlSelector(Map<String, String> tags) {
-        String metricName = tags.getOrDefault("__name__", "traffic_metric");
-        StringBuilder selector = new StringBuilder(metricName).append('{');
-        boolean first = true;
-        for (Map.Entry<String, String> tag : tags.entrySet()) {
-            if ("__name__".equals(tag.getKey())) {
-                continue;
-            }
-            if (!first) {
-                selector.append(',');
-            }
-            selector.append(tag.getKey())
-                    .append("=\"")
-                    .append(tag.getValue().replace("\\", "\\\\").replace("\"", "\\\""))
-                    .append("\"");
-            first = false;
-        }
-        return selector.append('}').toString();
+    private String buildPromQl() {
+        return "traffic_metric";
     }
 
     private synchronized void flush() {
