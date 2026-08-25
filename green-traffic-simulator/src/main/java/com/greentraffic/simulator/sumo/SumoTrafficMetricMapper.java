@@ -1,4 +1,4 @@
-package com.greentraffic.simulator;
+package com.greentraffic.simulator.sumo;
 
 import com.greentraffic.core.port.output.simulation.SumoTripInfo;
 import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;

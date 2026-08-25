@@ -1,7 +1,7 @@
-package com.greentraffic.common.messaging;
+package com.greentraffic.core.port.output.messaging;
 
 /**
- * 交通消息类型定义
+ * 交通消息类型定义（位于 core 的 Port 层，作为消息契约）
  */
 public final class TrafficMessageTypes {
 

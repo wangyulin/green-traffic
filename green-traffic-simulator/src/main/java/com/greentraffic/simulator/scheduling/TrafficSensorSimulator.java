@@ -1,4 +1,4 @@
-package com.greentraffic.simulator;
+package com.greentraffic.simulator.scheduling;
 
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;

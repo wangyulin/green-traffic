@@ -50,4 +50,4 @@ mybatis:
 management:
   health:
     db:
-      enabled: false
+      enabled: true

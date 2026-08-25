@@ -1,4 +1,4 @@
-package com.greentraffic.simulator;
+package com.greentraffic.simulator.sumo;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

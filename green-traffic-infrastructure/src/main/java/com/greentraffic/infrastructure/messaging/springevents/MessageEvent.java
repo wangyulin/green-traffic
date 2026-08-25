@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.messaging.springevents;
 
-import com.greentraffic.common.messaging.Message;
+import com.greentraffic.core.port.output.messaging.Message;
 import org.springframework.context.ApplicationEvent;
 
 /**

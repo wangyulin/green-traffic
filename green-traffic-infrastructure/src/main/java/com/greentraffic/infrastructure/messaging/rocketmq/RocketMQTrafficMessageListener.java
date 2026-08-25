@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.messaging.rocketmq;
 
-import com.greentraffic.common.messaging.Message;
+import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.infrastructure.messaging.rocketmq.consumer.RocketMQMessageSubscriber;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;

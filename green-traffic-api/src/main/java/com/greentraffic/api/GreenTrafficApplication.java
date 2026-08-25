@@ -3,7 +3,6 @@ package com.greentraffic.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -22,7 +21,7 @@ import java.util.Map;
 //            DataSourceAutoConfiguration.class
 //        }
 )
-public class GreenTrafficApplication implements CommandLineRunner {
+public class GreenTrafficApplication {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -33,9 +32,9 @@ public class GreenTrafficApplication implements CommandLineRunner {
         SpringApplication.run(GreenTrafficApplication.class, args);
     }
 
-    @Override
-    public void run(String... args) {
-        String result = jdbcTemplate.queryForObject("SELECT 1", String.class);
-        logger.info("数据库连接成功: {}", result);
-    }
+//    @Override
+//    public void run(String... args) {
+//        String result = jdbcTemplate.queryForObject("SELECT 1", String.class);
+//        logger.info("数据库连接成功: {}", result);
+//    }
 }

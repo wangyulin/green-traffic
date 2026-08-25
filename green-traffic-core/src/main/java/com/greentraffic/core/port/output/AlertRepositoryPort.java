@@ -1,4 +1,4 @@
-package com.greentraffic.common.repository;
+package com.greentraffic.core.port.output;
 
 import com.greentraffic.common.messaging.AlertMessage;
 
@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * 告警数据存储接口
  */
-public interface AlertRepository {
+public interface AlertRepositoryPort {
 
     /**
      * 保存告警

@@ -2,6 +2,7 @@ package com.greentraffic.simulator;
 
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
+import com.greentraffic.simulator.scheduling.TrafficSensorSimulator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

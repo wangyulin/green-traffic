@@ -1,11 +1,13 @@
 package com.greentraffic.simulator;
 
-import com.greentraffic.common.messaging.Message;
+import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.MessagePublisher;
-import com.greentraffic.common.messaging.TrafficMessageTypes;
+import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import com.greentraffic.core.port.output.simulation.SimulationEnginePort;
 import com.greentraffic.core.port.output.simulation.SumoTripInfo;
 import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
+import com.greentraffic.simulator.sumo.SumoSimulatorProperties;
+import com.greentraffic.simulator.sumo.SumoTrafficSimulator;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -36,7 +38,7 @@ class SumoTrafficSimulatorTest {
         simulator.simulateAndPublish();
 
         ArgumentCaptor<Message<?>> captor = ArgumentCaptor.forClass(Message.class);
-        verify(messagePublisher).publish(captor.capture());
+        verify(messagePublisher).publishAsync(captor.capture());
         assertThat(captor.getValue().getMessageType()).isEqualTo(TrafficMessageTypes.TRAFFIC_DATA_BATCH);
         SimulationTrafficMetric metric = (SimulationTrafficMetric) captor.getValue().getPayload();
         assertThat(metric.vehicleCount()).isEqualTo(2);

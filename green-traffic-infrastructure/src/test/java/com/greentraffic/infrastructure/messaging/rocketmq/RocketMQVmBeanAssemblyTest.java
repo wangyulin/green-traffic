@@ -43,17 +43,17 @@ public class RocketMQVmBeanAssemblyTest {
         public MessagePublisher messagePublisher(org.apache.rocketmq.spring.core.RocketMQTemplate template) {
             return new MessagePublisher() {
                 @Override
-                public void publish(com.greentraffic.common.messaging.Message<?> message) {
+                public void publish(com.greentraffic.core.port.output.messaging.Message<?> message) {
                     throw new UnsupportedOperationException("not needed for this test");
                 }
 
                 @Override
-                public void publish(String topic, com.greentraffic.common.messaging.Message<?> message) {
+                public void publish(String topic, com.greentraffic.core.port.output.messaging.Message<?> message) {
                     throw new UnsupportedOperationException("not needed for this test");
                 }
 
                 @Override
-                public void publishAsync(com.greentraffic.common.messaging.Message<?> message) {
+                public void publishAsync(com.greentraffic.core.port.output.messaging.Message<?> message) {
                     throw new UnsupportedOperationException("not needed for this test");
                 }
 

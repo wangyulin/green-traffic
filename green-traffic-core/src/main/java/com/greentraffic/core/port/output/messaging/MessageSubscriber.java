@@ -1,9 +1,9 @@
-package com.greentraffic.common.messaging;
+package com.greentraffic.core.port.output.messaging;
 
 import java.util.function.Consumer;
 
 /**
- * 消息订阅者接口
+ * 消息订阅者接口（迁移到 core 的 Port 层，作为消息契约）
  */
 public interface MessageSubscriber {
 

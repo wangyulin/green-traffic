@@ -1,8 +1,8 @@
 package com.greentraffic.infrastructure.messaging;
 
-import com.greentraffic.common.messaging.Message;
-import com.greentraffic.common.messaging.MessageSubscriber;
-import com.greentraffic.common.messaging.TrafficMessageTypes;
+import com.greentraffic.core.port.output.messaging.Message;
+import com.greentraffic.core.port.output.messaging.MessageSubscriber;
+import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase;
 import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;

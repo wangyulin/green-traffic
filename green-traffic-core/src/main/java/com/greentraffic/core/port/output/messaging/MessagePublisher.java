@@ -1,6 +1,6 @@
 package com.greentraffic.core.port.output.messaging;
 
-import com.greentraffic.common.messaging.Message;
+import com.greentraffic.core.port.output.messaging.Message;
 
 /**
  * 消息发布者接口

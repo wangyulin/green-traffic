@@ -1,11 +1,11 @@
-package com.greentraffic.simulator;
+package com.greentraffic.simulator.scheduling;
 
 import com.greentraffic.model.entity.traffic.TrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.greentraffic.common.messaging.Message;
+import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.MessagePublisher;
-import com.greentraffic.common.messaging.TrafficMessageTypes;
+import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +13,7 @@ import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import com.greentraffic.common.util.TimezoneUtils;
 import java.util.concurrent.ThreadLocalRandom;
+import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 
 @Component
 public class CarbonEmissionSimulator {
@@ -55,7 +56,12 @@ public class CarbonEmissionSimulator {
 
         // Send via MessagePublisher (implementation chosen by Spring via messaging.type)
         Message<com.greentraffic.model.entity.traffic.TrafficMetric> msg = Message.of(TrafficMessageTypes.CO2_EMISSION, metric);
-        messagePublisher.publish(msg);
+        try {
+            messagePublisher.publishAsync(msg);
+        } catch (NoUniqueBeanDefinitionException ex) {
+            logger.warn("检测到多个 TaskExecutor bean，回退使用同步 publish(): {}", ex.getMessage());
+            messagePublisher.publish(msg);
+        }
         logger.debug("Published simulated metric via MessagePublisher: {}", msg.getMessageId());
     }
 }

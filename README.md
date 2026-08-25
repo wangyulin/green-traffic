@@ -12,10 +12,6 @@
 
 传统交通管理方式存在以下痛点：
 
-| 痛点 | 具体表现 |
-|------|---------|
-| **数据滞后** | 交通数据依赖人工巡检，无法实时感知各路口状况 |
-| **缺乏量化** | 拥堵程度靠经验判断，没有碳排放量化指标 |
 | **响应被动** | 往往拥堵形成后才采取措施，缺乏预警机制 |
 | **信息孤岛** | 路口数据分散，缺乏统一监控平台 |
 
@@ -168,6 +164,24 @@
 ```
 
 ---
+
+## 消息契约迁移说明
+
+- **背景**：为保持六边形架构中 Port 层为业务契约的原则，消息类型常量已从 `green-traffic-common` 移至 `green-traffic-core` 的 Port 层。
+- **新位置**：请使用 `com.greentraffic.core.port.output.messaging.TrafficMessageTypes` 作为消息类型契约的权威定义。
+- **兼容性**：`green-traffic-common` 中仍保留 `com.greentraffic.common.messaging.TrafficMessageTypes`，但已标记为 `@Deprecated`，建议尽快替换导入。
+- **示例替换**：
+
+ 旧：
+
+    - `import com.greentraffic.common.messaging.TrafficMessageTypes;`
+
+    新：
+
+    - `import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;`
+
+- **后续步骤**：计划在下一个主版本中移除 `common` 中的旧定义，届时请确保所有模块已切换到新的包。
+
 
 ## 三、数据库设计
 

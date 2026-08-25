@@ -4,12 +4,10 @@ import com.greentraffic.core.port.output.metrics.MetricPoint;
 import com.greentraffic.core.port.output.MetricQueryPort;
 import com.greentraffic.core.port.input.QueryTrafficMetricUseCase;
 import com.greentraffic.model.entity.traffic.TrafficMetric;
-import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
 
-@Service
 public class TrafficMetricQueryApplicationService implements QueryTrafficMetricUseCase {
 
     private final MetricQueryPort queryPort;

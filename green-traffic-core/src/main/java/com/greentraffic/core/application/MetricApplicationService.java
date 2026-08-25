@@ -4,11 +4,9 @@ import com.greentraffic.core.port.output.metrics.MetricPoint;
 import com.greentraffic.core.port.output.MetricWritePort;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service
 public class MetricApplicationService implements WriteTrafficMetricUseCase {
     private final MetricWritePort writePort;
 
