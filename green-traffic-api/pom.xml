@@ -21,45 +21,17 @@
         </dependency>
         <dependency>
             <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-model</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-simulator</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.greentraffic</groupId>
             <artifactId>green-traffic-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-push</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-infrastructure</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+        <!-- API 作为 Adapter 层，应只依赖 Core 和 少量公共工具；Spring Boot 启动与基础设施移至 bootstrap 模块 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -74,21 +46,6 @@
 
     </dependencies>
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.greentraffic.api.GreenTrafficApplication</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
+        <!-- 无需在 API 模块中打包为可执行 Spring Boot 应用 -->
     </build>
 </project>

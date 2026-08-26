@@ -25,11 +25,7 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-model</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+        <!-- model module removed: infrastructure now maps payloads to core.domain types -->
         <dependency>
             <groupId>com.greentraffic</groupId>
             <artifactId>green-traffic-core</artifactId>

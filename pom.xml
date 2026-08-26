@@ -14,8 +14,8 @@
 
     <modules>
         <module>green-traffic-common</module>
-        <module>green-traffic-model</module>
         <module>green-traffic-core</module>
+        <module>green-traffic-bootstrap</module>
         <module>green-traffic-push</module>
         <module>green-traffic-simulator</module>
         <module>green-traffic-api</module>

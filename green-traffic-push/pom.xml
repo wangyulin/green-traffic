@@ -21,11 +21,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Push adapter depends on core; keep model temporarily for existing DTOs to avoid breakage -->
         <dependency>
             <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-model</artifactId>
+            <artifactId>green-traffic-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- model dependency removed; push adapter should adapt to core port DTOs -->
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

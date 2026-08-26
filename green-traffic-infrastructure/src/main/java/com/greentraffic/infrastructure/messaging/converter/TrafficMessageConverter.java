@@ -65,8 +65,7 @@ public class TrafficMessageConverter
         // 如果 payload 显式是仿真模型（来自 simulator 的 model 层），
         // 或者是反序列化得到的 Map 且包含 simulationId 字段，
         // 那说明这是一条仿真消息，应由 SimulationTrafficMessageConverter 处理。
-        if (payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric
-            || payload instanceof com.greentraffic.model.entity.traffic.SimulationTrafficMetric) {
+        if (payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric) {
             return false;
         }
 

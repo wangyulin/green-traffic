@@ -10,7 +10,7 @@ import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.MessageSubscriber;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import com.greentraffic.infrastructure.messaging.converter.SimulationTrafficMessageConverter;
-import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

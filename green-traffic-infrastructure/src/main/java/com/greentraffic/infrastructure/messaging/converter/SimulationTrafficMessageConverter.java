@@ -55,8 +55,7 @@ public class SimulationTrafficMessageConverter
 
         Object payload = message.getPayload();
         return payload instanceof SimulationTrafficMetric
-                || payload instanceof com.greentraffic.model.entity.traffic.SimulationTrafficMetric
-                || payload instanceof Map<?, ?> map && map.containsKey("simulationId");
+            || payload instanceof Map<?, ?> map && map.containsKey("simulationId");
     }
 
     @Override
@@ -71,36 +70,22 @@ public class SimulationTrafficMessageConverter
             return copyWithPayload(message, metric);
         }
 
-        if (payload instanceof com.greentraffic.model.entity.traffic.SimulationTrafficMetric metric) {
-            return copyWithPayload(
-                    message,
-                    toDomainMetric(metric)
-            );
-        }
-
         if (payload == null) {
             throw new IllegalArgumentException(
-                    "Cannot convert null payload to SimulationTrafficMetric"
+                "Cannot convert null payload to SimulationTrafficMetric"
             );
         }
 
-        /*
-         * 对于 RocketMQ / JSON 反序列化后的 Map 等类型，
-         * 仍然允许 ObjectMapper 做一次转换。
-         *
-         * 但是 model.entity.traffic.SimulationTrafficMetric
-         * 已经在上面显式转换，因此不会再触发 Instant 的 Jackson
-         * 序列化/反序列化问题。
-         */
-        com.greentraffic.model.entity.traffic.SimulationTrafficMetric modelMetric =
-                objectMapper.convertValue(
-                        payload,
-                        com.greentraffic.model.entity.traffic.SimulationTrafficMetric.class
-                );
+        // 对于 Map 或 JSON 字符串等情况，直接映射为 core.domain.SimulationTrafficMetric
+        SimulationTrafficMetric modelMetric =
+            objectMapper.convertValue(
+                payload,
+                SimulationTrafficMetric.class
+            );
 
         return copyWithPayload(
-                message,
-                toDomainMetric(modelMetric)
+            message,
+            modelMetric
         );
     }
 
@@ -109,24 +94,7 @@ public class SimulationTrafficMessageConverter
         return SUPPORTED_MESSAGE_TYPES;
     }
 
-    private SimulationTrafficMetric toDomainMetric(
-            com.greentraffic.model.entity.traffic.SimulationTrafficMetric source) {
-
-        return new SimulationTrafficMetric(
-                source.simulationId(),
-                source.roadId(),
-                source.direction(),
-                source.vehicleType(),
-                source.vehicleCount(),
-                source.averageSpeed(),
-                source.totalCo2Emission(),
-                source.averageTravelTime(),
-                source.averageWaitingTime(),
-                source.averageTimeLoss(),
-                source.totalRouteLength(),
-                source.timestamp()
-        );
-    }
+    // no-op: mapping now converts directly to core.domain.SimulationTrafficMetric
 
     private Message<SimulationTrafficMetric> copyWithPayload(
             Message<?> source,
