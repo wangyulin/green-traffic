@@ -1,7 +1,7 @@
 package com.greentraffic.simulator.sumo;
 
 import com.greentraffic.core.port.output.simulation.SumoTripInfo;
-import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 
 import java.time.Instant;
 import java.util.List;

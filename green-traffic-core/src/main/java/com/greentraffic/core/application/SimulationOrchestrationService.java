@@ -5,7 +5,6 @@ import com.greentraffic.core.port.input.SimulationOrchestrationUseCase;
 import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.MessagePublisher;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
-import com.greentraffic.common.util.TimezoneUtils;
 
 import java.lang.invoke.MethodHandles;
 import org.slf4j.Logger;
@@ -76,7 +75,7 @@ public class SimulationOrchestrationService implements SimulationOrchestrationUs
         double averageTimeLoss = calculateTimeLoss(averageTravelTime);
         double totalRouteLength = vehicleCount * ROAD_LENGTH * 1000;
         double totalCo2Emission = calculateCo2Emission(vehicleCount, vehicleType, totalRouteLength);
-        Instant ts = TimezoneUtils.normalizeInstant(Instant.now());
+        Instant ts = Instant.now();
 
         return new SimulationTrafficMetric(
                 simulationId,

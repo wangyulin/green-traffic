@@ -6,13 +6,13 @@ import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import com.greentraffic.core.port.output.simulation.SimulationEnginePort;
 import com.greentraffic.core.port.output.simulation.SumoSimulationRequest;
 import com.greentraffic.core.port.output.simulation.SumoTripInfo;
-import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
@@ -44,7 +44,7 @@ public class SumoTrafficSimulator {
         logger.info("SUMO仿真系统-定时任务-初始化---");
     }
 
-    // @Scheduled(fixedDelayString = "${green-traffic.sumo.interval-ms:5000}")
+    @Scheduled(fixedDelayString = "${green-traffic.sumo.interval-ms:5000}")
     public void simulateAndPublish() {
         logger.info("SUMO仿真系统-定时任务-触发---");
         String simulationId = UUID.randomUUID().toString();
@@ -54,12 +54,22 @@ public class SumoTrafficSimulator {
                 properties.getDurationSeconds(),
                 properties.getVehiclesPerHour()));
 
-        String trips_json = objectMapper.writeValueAsString(trips);
+        String trips_json = null;
+        try {
+            trips_json = objectMapper.writeValueAsString(trips);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            logger.warn("Failed to serialize SUMO trips: {}", e.getMessage());
+        }
         // logger.info("SUMO 当前生成的数据 trips : {}", trips_json);
         SimulationTrafficMetric metric = SumoTrafficMetricMapper.map(simulationId, trips, Instant.now());
 
-        String metric_json = objectMapper.writeValueAsString(metric);
-        logger.info("SUMO 当前生成的数据 metric : {}", metric_json);
+        String metric_json = null;
+        try {
+            metric_json = objectMapper.writeValueAsString(metric);
+            logger.info("SUMO 当前生成的数据 metric : {}", metric_json);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            logger.warn("Failed to serialize SUMO metric: {}", e.getMessage());
+        }
 
         if (metric != null) {
             try {

@@ -14,11 +14,6 @@
     <artifactId>green-traffic-core</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
 <!--        <dependency>-->
 <!--            <groupId>com.greentraffic</groupId>-->
@@ -65,6 +60,23 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Jackson for contract serialization tests -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- ArchUnit for architecture tests -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

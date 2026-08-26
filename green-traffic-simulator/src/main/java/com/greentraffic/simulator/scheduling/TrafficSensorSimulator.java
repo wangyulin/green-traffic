@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
@@ -30,8 +31,7 @@ public class TrafficSensorSimulator {
         this.writeUseCase = writeUseCase;
     }
 
-    // @Scheduled(fixedDelayString = "${green-traffic.simulator.interval-ms:5000}")
-    // @Scheduled(fixedDelay = 5000)
+    @Scheduled(fixedDelayString = "${green-traffic.simulator.interval-ms:5000}")
     public void generateTrafficData() {
         logger.info("碳排放仿真系统-定时任务-触发---");
         // TODO: 调用 generator 生成模拟车流数据并发布/交给核心业务处理。
