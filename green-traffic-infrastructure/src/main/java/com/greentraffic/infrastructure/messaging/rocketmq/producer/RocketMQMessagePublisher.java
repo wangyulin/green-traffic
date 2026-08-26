@@ -8,9 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 public class RocketMQMessagePublisher implements MessagePublisher {
 
     private final RocketMQTemplate rocketMQTemplate;
-    private final TaskExecutor taskExecutor;
     private final MessageReliabilityService reliabilityService;
 
     @Value("${messaging.rocketmq.topic:traffic-carbon}")
@@ -33,11 +30,9 @@ public class RocketMQMessagePublisher implements MessagePublisher {
 
     public RocketMQMessagePublisher(
             RocketMQTemplate rocketMQTemplate,
-            @Qualifier("messagePublisherExecutor")
-            TaskExecutor taskExecutor, MessageReliabilityService reliabilityService
+            MessageReliabilityService reliabilityService
     ) {
         this.rocketMQTemplate = rocketMQTemplate;
-        this.taskExecutor = taskExecutor;
         this.reliabilityService = reliabilityService;
     }
 

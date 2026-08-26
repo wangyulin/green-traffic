@@ -1,6 +1,6 @@
 package com.greentraffic.core.port.input;
 
-import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 
 import java.time.Instant;
 

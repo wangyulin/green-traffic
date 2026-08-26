@@ -52,7 +52,7 @@ class MetricsControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(content().string("accepted"));
+                .andExpect(content().json("{\"code\":200}"));
 
         ArgumentCaptor<WriteTrafficMetricCommand> commandCaptor = ArgumentCaptor.forClass(WriteTrafficMetricCommand.class);
         verify(writeUseCase).write(commandCaptor.capture());

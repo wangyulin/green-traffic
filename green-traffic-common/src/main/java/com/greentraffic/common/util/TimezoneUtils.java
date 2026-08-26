@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 
 /**
  * 时区工具类，封装系统时区获取、Instant/LocalDateTime/OffsetDateTime 互转
@@ -15,6 +14,23 @@ public final class TimezoneUtils {
 
     /** 返回系统默认时区 */
     public static ZoneId getSystemZone() {
+        // 优先使用环境变量 GREEN_TRAFFIC_TIMEZONE，其次使用 JVM 属性 user.timezone，最后使用系统默认时区
+        String env = System.getenv("GREEN_TRAFFIC_TIMEZONE");
+        if (env != null && !env.isBlank()) {
+            try {
+                return ZoneId.of(env.trim());
+            } catch (Exception ignored) {
+            }
+        }
+
+        String prop = System.getProperty("user.timezone");
+        if (prop != null && !prop.isBlank()) {
+            try {
+                return ZoneId.of(prop.trim());
+            } catch (Exception ignored) {
+            }
+        }
+
         return ZoneId.systemDefault();
     }
 
@@ -39,9 +55,9 @@ public final class TimezoneUtils {
     }
 
     /**
-     * 规范化 Instant（当前实现为透明传递，留作未来扩展）。
+     * 规范化 Instant。Instant 表示绝对时间点，不应施加本地时区偏移。
      */
     public static Instant normalizeInstant(Instant instant) {
-        return instant == null ? null : instant;
+        return instant;
     }
 }

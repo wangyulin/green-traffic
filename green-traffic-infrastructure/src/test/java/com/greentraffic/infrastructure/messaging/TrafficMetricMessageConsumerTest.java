@@ -1,11 +1,16 @@
 package com.greentraffic.infrastructure.messaging;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
+import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
+import com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase;
+import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
+import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.MessageSubscriber;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
-import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
-import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import com.greentraffic.core.domain.traffic.TrafficMetric;
+import com.greentraffic.infrastructure.messaging.converter.SimulationTrafficMessageConverter;
+import com.greentraffic.model.entity.traffic.SimulationTrafficMetric;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -15,67 +20,212 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class TrafficMetricMessageConsumerTest {
 
     @Test
     void subscribesTrafficMessagesAndForwardsMetricPayloadsToWriteUseCase() {
-        MessageSubscriber messageSubscriber = mock(MessageSubscriber.class);
-        WriteTrafficMetricUseCase writeUseCase = mock(WriteTrafficMetricUseCase.class);
-        com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase writeSimulationUseCase = mock(com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase.class);
-        TrafficMetricMessageConsumer consumer = new TrafficMetricMessageConsumer(messageSubscriber, writeUseCase, writeSimulationUseCase);
+        MessageSubscriber messageSubscriber =
+                mock(MessageSubscriber.class);
+
+        WriteTrafficMetricUseCase writeUseCase =
+                mock(WriteTrafficMetricUseCase.class);
+
+        WriteSimulationTrafficMetricUseCase writeSimulationUseCase =
+                mock(WriteSimulationTrafficMetricUseCase.class);
+
+        ObjectMapper objectMapper =
+                new ObjectMapper();
+
+        SimulationTrafficMessageConverter simulationTrafficMessageConverter =
+                new SimulationTrafficMessageConverter(objectMapper);
+
+        TrafficMetricMessageConsumer consumer =
+                new TrafficMetricMessageConsumer(
+                        messageSubscriber,
+                        writeUseCase,
+                        writeSimulationUseCase);
 
         consumer.subscribe();
 
-        ArgumentCaptor<String> typeCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> typeCaptor =
+                ArgumentCaptor.forClass(String.class);
+
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Consumer<Message<?>>> handlerCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(messageSubscriber, org.mockito.Mockito.times(2)).subscribe(typeCaptor.capture(), handlerCaptor.capture());
-        Map<String, Consumer<Message<?>>> handlers = new HashMap<>();
-        for (int index = 0; index < typeCaptor.getAllValues().size(); index++) {
-            handlers.put(typeCaptor.getAllValues().get(index), handlerCaptor.getAllValues().get(index));
+        ArgumentCaptor<Consumer<Message<?>>> handlerCaptor =
+                ArgumentCaptor.forClass(Consumer.class);
+
+        verify(messageSubscriber, times(2))
+                .subscribe(
+                        typeCaptor.capture(),
+                        handlerCaptor.capture()
+                );
+
+        Map<String, Consumer<Message<?>>> handlers =
+                new HashMap<>();
+
+        for (int index = 0;
+             index < typeCaptor.getAllValues().size();
+             index++) {
+
+            handlers.put(
+                    typeCaptor.getAllValues().get(index),
+                    handlerCaptor.getAllValues().get(index)
+            );
         }
 
-        TrafficMetric metric = new TrafficMetric(
-                "ROAD-001", "EAST", "CAR", 120, 42.5, 12.3, null,
-                Instant.parse("2026-08-22T10:00:00Z")
-        );
+        assertThat(handlers)
+                .containsKeys(
+                        TrafficMessageTypes.TRAFFIC_DATA,
+                        TrafficMessageTypes.CO2_EMISSION
+                );
+
+        /*
+         * 普通 TrafficMetric
+         */
+        TrafficMetric metric =
+                new TrafficMetric(
+                        "ROAD-001",
+                        "EAST",
+                        "CAR",
+                        120,
+                        42.5,
+                        12.3,
+                        null,
+                        Instant.parse("2026-08-22T10:00:00Z")
+                );
+
         handlers.get(TrafficMessageTypes.CO2_EMISSION)
-                .accept(Message.of(TrafficMessageTypes.CO2_EMISSION, metric));
+                .accept(
+                        Message.of(
+                                TrafficMessageTypes.CO2_EMISSION,
+                                metric
+                        )
+                );
 
-        verify(writeUseCase).write(WriteTrafficMetricCommand.from(metric));
-        assertThat(handlers).containsKeys(
-                TrafficMessageTypes.TRAFFIC_DATA,
-                TrafficMessageTypes.CO2_EMISSION
-        );
+        verify(writeUseCase)
+                .write(
+                        WriteTrafficMetricCommand.from(metric)
+                );
 
-        // also ensure SimulationTrafficMetric payloads on CO2_EMISSION are forwarded
-        com.greentraffic.model.entity.traffic.SimulationTrafficMetric sim = new com.greentraffic.model.entity.traffic.SimulationTrafficMetric(
-            "sim-1", "ROAD-001", "EAST", "CAR", 10, 40.0, 0.5, 5.0, 0.5, 0.2, 15000.0, Instant.parse("2026-08-22T10:00:00Z")
-        );
+        /*
+         * SimulationTrafficMetric
+         *
+         * 这里故意使用 model entity，
+         * 因为这是 Infrastructure 层收到消息时可能存在的 Payload 类型。
+         *
+         * Consumer / Converter 负责将其转换为
+         * core.domain.traffic.SimulationTrafficMetric。
+         */
+        SimulationTrafficMetric simulationMetric =
+                new SimulationTrafficMetric(
+                        "sim-1",
+                        "ROAD-001",
+                        "EAST",
+                        "CAR",
+                        10,
+                        40.0,
+                        0.5,
+                        5.0,
+                        0.5,
+                        0.2,
+                        15000.0,
+                        Instant.parse("2026-08-22T10:00:00Z")
+                );
+
         handlers.get(TrafficMessageTypes.CO2_EMISSION)
-            .accept(Message.of(TrafficMessageTypes.CO2_EMISSION, sim));
+                .accept(
+                        Message.of(
+                                TrafficMessageTypes.CO2_EMISSION,
+                                simulationMetric
+                        )
+                );
 
-        verify(writeSimulationUseCase).write(com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand.from(sim));
+        ArgumentCaptor<WriteSimulationTrafficMetricCommand>
+                simulationCommandCaptor =
+                ArgumentCaptor.forClass(
+                        WriteSimulationTrafficMetricCommand.class
+                );
+
+        verify(writeSimulationUseCase)
+                .write(simulationCommandCaptor.capture());
+
+        WriteSimulationTrafficMetricCommand simulationCommand =
+                simulationCommandCaptor.getValue();
+
+        assertThat(simulationCommand)
+                .isNotNull();
+
+        assertThat(simulationCommand.simulationId())
+                .isEqualTo("sim-1");
+
+        assertThat(simulationCommand.roadId())
+                .isEqualTo("ROAD-001");
+
+        assertThat(simulationCommand.direction())
+                .isEqualTo("EAST");
+
+        assertThat(simulationCommand.vehicleType())
+                .isEqualTo("CAR");
+
+        assertThat(simulationCommand.totalRouteLength())
+                .isEqualTo(15000.0);
     }
 
     @Test
     void ignoresNonMetricPayloads() {
-        MessageSubscriber messageSubscriber = mock(MessageSubscriber.class);
-        WriteTrafficMetricUseCase writeUseCase = mock(WriteTrafficMetricUseCase.class);
-        com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase writeSimulationUseCase = mock(com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase.class);
-        TrafficMetricMessageConsumer consumer = new TrafficMetricMessageConsumer(messageSubscriber, writeUseCase, writeSimulationUseCase);
+        MessageSubscriber messageSubscriber =
+                mock(MessageSubscriber.class);
+
+        WriteTrafficMetricUseCase writeUseCase =
+                mock(WriteTrafficMetricUseCase.class);
+
+        WriteSimulationTrafficMetricUseCase writeSimulationUseCase =
+                mock(WriteSimulationTrafficMetricUseCase.class);
+
+        ObjectMapper objectMapper =
+                new ObjectMapper();
+
+        SimulationTrafficMessageConverter simulationTrafficMessageConverter =
+                new SimulationTrafficMessageConverter(objectMapper);
+
+        TrafficMetricMessageConsumer consumer =
+                new TrafficMetricMessageConsumer(
+                        messageSubscriber,
+                        writeUseCase,
+                        writeSimulationUseCase);
 
         consumer.subscribe();
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Consumer<Message<?>>> handlerCaptor = ArgumentCaptor.forClass(Consumer.class);
-        verify(messageSubscriber, org.mockito.Mockito.times(2))
-                .subscribe(org.mockito.ArgumentMatchers.anyString(), handlerCaptor.capture());
-        handlerCaptor.getAllValues().get(0).accept(Message.of(TrafficMessageTypes.TRAFFIC_DATA, "invalid"));
+        ArgumentCaptor<Consumer<Message<?>>> handlerCaptor =
+                ArgumentCaptor.forClass(Consumer.class);
 
-        verify(writeUseCase, org.mockito.Mockito.never()).write(org.mockito.ArgumentMatchers.any());
+        verify(messageSubscriber, times(2))
+                .subscribe(
+                        org.mockito.ArgumentMatchers.anyString(),
+                        handlerCaptor.capture()
+                );
+
+        Consumer<Message<?>> handler =
+                handlerCaptor.getAllValues().get(0);
+
+        handler.accept(
+                Message.of(
+                        TrafficMessageTypes.TRAFFIC_DATA,
+                        "invalid"
+                )
+        );
+
+        verify(writeUseCase, never())
+                .write(any());
+
+        verify(writeSimulationUseCase, never())
+                .write(any());
     }
 }

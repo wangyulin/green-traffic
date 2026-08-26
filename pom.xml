@@ -84,6 +84,13 @@
                 <version>1.5.18</version>
             </dependency>
 
+            <!-- ArchUnit JUnit 5 集成 -->
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>1.4.1</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

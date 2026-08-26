@@ -7,7 +7,6 @@ import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.springframework.core.task.TaskExecutor;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,9 +37,6 @@ class RocketMQMessagePublisherUnitTest {
     private RocketMQTemplate rocketMQTemplate;
 
     @Mock
-    private TaskExecutor taskExecutor;
-
-    @Mock
     private MessageReliabilityService reliabilityService;
 
     /**
@@ -62,7 +58,6 @@ class RocketMQMessagePublisherUnitTest {
         RocketMQMessagePublisher publisher =
                 new RocketMQMessagePublisher(
                         rocketMQTemplate,
-                        taskExecutor,
                         reliabilityService
                 );
 
@@ -112,10 +107,6 @@ class RocketMQMessagePublisherUnitTest {
                         any(org.springframework.messaging.Message.class)
                 );
 
-        /*
-         * TaskExecutor 不应该参与普通同步发送。
-         */
-        verifyNoInteractions(taskExecutor);
     }
 
     /**
@@ -142,7 +133,6 @@ class RocketMQMessagePublisherUnitTest {
         RocketMQMessagePublisher publisher =
                 new RocketMQMessagePublisher(
                         rocketMQTemplate,
-                        taskExecutor,
                         reliabilityService
                 );
 
@@ -174,10 +164,6 @@ class RocketMQMessagePublisherUnitTest {
                         any()
                 );
 
-        /*
-         * 当前实现没有使用 TaskExecutor。
-         */
-        verifyNoInteractions(taskExecutor);
     }
 
     /**
@@ -199,7 +185,6 @@ class RocketMQMessagePublisherUnitTest {
         RocketMQMessagePublisher publisher =
                 new RocketMQMessagePublisher(
                         rocketMQTemplate,
-                        taskExecutor,
                         reliabilityService
                 );
 
@@ -216,7 +201,5 @@ class RocketMQMessagePublisherUnitTest {
                 .isDuplicate(message);
 
         verifyNoInteractions(rocketMQTemplate);
-
-        verifyNoInteractions(taskExecutor);
     }
 }
