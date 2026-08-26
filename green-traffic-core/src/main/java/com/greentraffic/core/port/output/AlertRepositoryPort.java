@@ -1,6 +1,6 @@
 package com.greentraffic.core.port.output;
 
-import com.greentraffic.common.messaging.AlertMessage;
+import com.greentraffic.core.messaging.AlertMessage;
 
 import java.util.List;
 

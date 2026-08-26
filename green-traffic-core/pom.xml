@@ -31,17 +31,7 @@
 
         <!-- 生产依赖保持原来的 core 依赖 -->
 
-        <dependency>
-            <groupId>com.greentraffic</groupId>
-            <artifactId>green-traffic-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-<!--        <dependency>-->
-<!--            <groupId>com.greentraffic</groupId>-->
-<!--            <artifactId>green-traffic-model</artifactId>-->
-<!--            <version>${project.version}</version>-->
-<!--        </dependency>-->
+        <!-- core 不再直接依赖 common 模块；只保留对 spring / mybatis 等运行时依赖 -->
 
 
 
