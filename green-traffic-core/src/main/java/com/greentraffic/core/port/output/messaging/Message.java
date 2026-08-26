@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -57,7 +57,7 @@ public class Message<T> implements Serializable {
     /**
      * 发送时间
      */
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     /**
      * 消息协议/Schema 版本
@@ -88,7 +88,7 @@ public class Message<T> implements Serializable {
                 .messageType(messageType)
                 .schemaVersion("1.0")
                 .payload(payload)
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .build();
     }
 

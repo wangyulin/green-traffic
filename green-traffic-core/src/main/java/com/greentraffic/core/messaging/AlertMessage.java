@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * 告警消息（Core 版）
@@ -26,9 +26,9 @@ public class AlertMessage implements Serializable {
     private Double co2Emission;
     private Double averageSpeed;
     private Integer trafficFlow;
-    private LocalDateTime alertTime;
+    private Instant alertTime;
     private boolean processed;
-    private LocalDateTime processedTime;
+    private Instant processedTime;
     private String processedBy;
 
     public enum AlertType {
@@ -75,7 +75,7 @@ public class AlertMessage implements Serializable {
                 .content(String.format("道路 %s 碳排放超标，当前值: %.2f", roadId, co2Emission))
                 .roadId(roadId)
                 .co2Emission(co2Emission)
-                .alertTime(LocalDateTime.now())
+                .alertTime(Instant.now())
                 .processed(false)
                 .build();
     }
@@ -89,7 +89,7 @@ public class AlertMessage implements Serializable {
                 .content(String.format("道路 %s 交通拥堵，平均速度: %.2f km/h", roadId, averageSpeed))
                 .roadId(roadId)
                 .averageSpeed(averageSpeed)
-                .alertTime(LocalDateTime.now())
+                .alertTime(Instant.now())
                 .processed(false)
                 .build();
     }

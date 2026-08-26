@@ -2,7 +2,7 @@ package com.greentraffic.model.traffic;
 
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * 车辆能耗
@@ -13,5 +13,5 @@ public class EnergyRecord {
 
     private BigDecimal energy;
 
-    private LocalDateTime time;
+    private Instant time;
 }
