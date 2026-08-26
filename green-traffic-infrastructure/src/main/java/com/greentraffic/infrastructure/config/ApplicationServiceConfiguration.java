@@ -31,6 +31,11 @@ public class ApplicationServiceConfiguration {
     }
 
     @Bean
+    public com.greentraffic.core.port.input.SimulationOrchestrationUseCase simulationOrchestrationUseCase(com.greentraffic.core.port.output.messaging.MessagePublisher publisher) {
+        return new com.greentraffic.core.application.SimulationOrchestrationService(publisher);
+    }
+
+    @Bean
     public QueryTrafficMetricUseCase queryTrafficMetricUseCase(MetricQueryPort queryPort) {
         return new TrafficMetricQueryApplicationService(queryPort);
     }
