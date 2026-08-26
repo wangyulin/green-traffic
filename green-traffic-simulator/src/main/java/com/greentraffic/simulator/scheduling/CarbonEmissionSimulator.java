@@ -46,6 +46,7 @@ public class CarbonEmissionSimulator {
 
     public CarbonEmissionSimulator(MessagePublisher messagePublisher) {
         this.messagePublisher = messagePublisher;
+        logger.info("碳排放仿真系统-定时任务-初始化---");
     }
 
     @Scheduled(fixedDelayString = "${green-traffic.simulator.interval-ms:5000}")

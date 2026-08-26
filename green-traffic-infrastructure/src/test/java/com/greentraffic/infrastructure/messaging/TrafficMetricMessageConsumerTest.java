@@ -20,13 +20,48 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class TrafficMetricMessageConsumerTest {
+
+    @Test
+    void propagatesWriteFailureSoMessageBrokerCanRetry() {
+        MessageSubscriber messageSubscriber = mock(MessageSubscriber.class);
+        WriteTrafficMetricUseCase writeUseCase = mock(WriteTrafficMetricUseCase.class);
+        WriteSimulationTrafficMetricUseCase writeSimulationUseCase =
+                mock(WriteSimulationTrafficMetricUseCase.class);
+        TrafficMetricMessageConsumer consumer = new TrafficMetricMessageConsumer(
+                messageSubscriber,
+                writeUseCase,
+                writeSimulationUseCase
+        );
+
+        consumer.subscribe();
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Consumer<Message<?>>> handlerCaptor =
+                ArgumentCaptor.forClass(Consumer.class);
+        verify(messageSubscriber, times(2)).subscribe(any(), handlerCaptor.capture());
+
+        TrafficMetric metric = new TrafficMetric(
+                "ROAD-FAIL", "EAST", "CAR", 1, 30.0, 2.0, null, Instant.now()
+        );
+        doThrow(new IllegalStateException("storage unavailable"))
+                .when(writeUseCase)
+                .write(WriteTrafficMetricCommand.from(metric));
+
+        assertThatThrownBy(() -> handlerCaptor.getAllValues().get(0).accept(
+                Message.of(TrafficMessageTypes.TRAFFIC_DATA, metric)
+        ))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("storage unavailable");
+    }
 
     @Test
     void subscribesTrafficMessagesAndForwardsMetricPayloadsToWriteUseCase() {

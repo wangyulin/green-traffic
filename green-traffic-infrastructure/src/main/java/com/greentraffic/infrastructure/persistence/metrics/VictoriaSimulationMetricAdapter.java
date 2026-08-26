@@ -1,151 +1,221 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
-import com.greentraffic.core.port.output.metrics.SimulationMetricPoint;
 import com.greentraffic.core.port.output.SimulationMetricWritePort;
+import com.greentraffic.core.port.output.metrics.SimulationMetricPoint;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 将 SUMO 仿真指标以 Influx line protocol 写入 VictoriaMetrics。
- */
-@Component
+@Service
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "victoria-metrics")
 public class VictoriaSimulationMetricAdapter implements SimulationMetricWritePort {
 
-    private static final String MEASUREMENT = "sumo_traffic_metric";
+	private static final Logger log = LoggerFactory.getLogger(VictoriaSimulationMetricAdapter.class);
+	private static final String MEASUREMENT = "sumo_traffic_metric";
 
-    private final MetricsProperties properties;
-    private final RestTemplate restTemplate;
-    private final BlockingQueue<SimulationMetricPoint> queue = new LinkedBlockingQueue<>();
-    private ScheduledExecutorService scheduler;
+	private final MetricsProperties properties;
+	private final RestTemplate restTemplate;
+	private final BlockingDeque<SimulationMetricPoint> queue = new LinkedBlockingDeque<>();
+	private ScheduledExecutorService scheduler;
 
-    @Autowired
-    public VictoriaSimulationMetricAdapter(MetricsProperties properties) {
-        this(properties, new RestTemplate());
-    }
+	@Autowired
+	public VictoriaSimulationMetricAdapter(MetricsProperties properties) {
+		this(properties, new RestTemplate());
+	}
 
-    VictoriaSimulationMetricAdapter(MetricsProperties properties, RestTemplate restTemplate) {
-        this.properties = properties;
-        this.restTemplate = restTemplate;
-    }
+	VictoriaSimulationMetricAdapter(MetricsProperties properties, RestTemplate restTemplate) {
+		this.properties = properties;
+		this.restTemplate = restTemplate;
+	}
 
-    @PostConstruct
-    void start() {
-        scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.scheduleAtFixedRate(this::flush,
-                properties.getFlushIntervalMs(), properties.getFlushIntervalMs(), TimeUnit.MILLISECONDS);
-    }
+	@PostConstruct
+	public void start() {
+		scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+			Thread thread = new Thread(runnable, "vm-simulation-metrics-flusher");
+			thread.setDaemon(true);
+			return thread;
+		});
+		scheduler.scheduleAtFixedRate(
+				this::flush,
+				properties.getFlushIntervalMs(),
+				properties.getFlushIntervalMs(),
+				TimeUnit.MILLISECONDS
+		);
+	}
 
-    @Override
-    public void write(List<SimulationMetricPoint> points) {
-        if (points == null || points.isEmpty()) {
-            return;
-        }
-        queue.addAll(points);
-        if (queue.size() >= Math.max(1, properties.getBatchSize())) {
-            flush();
-        }
-    }
+	@PreDestroy
+	public void stop() {
+		if (scheduler != null) {
+			scheduler.shutdownNow();
+		}
+		flush();
+	}
 
-    @PreDestroy
-    void stop() {
-        if (scheduler != null) {
-            scheduler.shutdownNow();
-        }
-        flush();
-    }
+	@Override
+	public void write(List<SimulationMetricPoint> points) {
+		if (points == null || points.isEmpty()) {
+			return;
+		}
+		points.forEach(queue::offerLast);
+		if (scheduler != null && queue.size() >= Math.max(1, properties.getBatchSize())) {
+			scheduler.execute(this::flush);
+		}
+	}
 
-    synchronized void flush() {
-        List<SimulationMetricPoint> drained = new ArrayList<>();
-        queue.drainTo(drained);
-        if (drained.isEmpty()) {
-            return;
-        }
-        String writeUrl = properties.getVmUrl();
-        if (!isAbsoluteUrl(writeUrl)) {
-            throw new IllegalStateException("metrics.vmUrl must be an absolute URL for VictoriaMetrics writes");
-        }
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_PLAIN);
-        int attempt = 0;
-        while (attempt <= properties.getMaxRetries()) {
-            try {
-                restTemplate.postForEntity(writeUrl, new HttpEntity<>(toLineProtocol(drained), headers), String.class);
-                return;
-            } catch (RuntimeException exception) {
-                attempt++;
-                if (attempt > properties.getMaxRetries()) {
-                    throw exception;
-                }
-                try {
-                    Thread.sleep(properties.getRetryInitialDelayMs() * attempt);
-                } catch (InterruptedException interruptedException) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException("VictoriaMetrics simulation metric write interrupted", interruptedException);
-                }
-            }
-        }
-    }
+	synchronized void flush() {
+		List<SimulationMetricPoint> drained = new ArrayList<>(Math.max(1, properties.getBatchSize()));
+		queue.drainTo(drained, Math.max(1, properties.getBatchSize()));
+		if (drained.isEmpty()) {
+			return;
+		}
 
-    String toLineProtocol(List<SimulationMetricPoint> points) {
-        StringBuilder payload = new StringBuilder();
-        for (SimulationMetricPoint point : points) {
-            payload.append(MEASUREMENT);
-            addTag(payload, "simulationId", point.simulationId());
-            addTag(payload, "roadId", point.roadId());
-            addTag(payload, "direction", point.direction());
-            addTag(payload, "vehicleType", point.vehicleType());
-            payload.append(' ')
-                    .append("vehicleCount=").append(point.vehicleCount()).append('i')
-                    .append(",averageSpeed=").append(point.averageSpeed())
-                    .append(",totalCo2Emission=").append(point.totalCo2Emission())
-                    .append(",averageTravelTime=").append(point.averageTravelTime())
-                    .append(",averageWaitingTime=").append(point.averageWaitingTime())
-                    .append(",averageTimeLoss=").append(point.averageTimeLoss())
-                    .append(",totalRouteLength=").append(point.totalRouteLength())
-                    .append(' ').append(toNanoseconds(point.timestamp())).append('\n');
-        }
-        return payload.toString();
-    }
+		String url = properties.getVmUrl();
+		if (url == null || url.isBlank() || !isAbsoluteUrl(url)) {
+			log.error("[VMSimulationAdapter] invalid or missing metrics.vmUrl: {}", url);
+			requeueAtFront(drained);
+			return;
+		}
 
-    private void addTag(StringBuilder payload, String name, String value) {
-        if (value != null) {
-            payload.append(',').append(name).append('=').append(escapeTag(value));
-        }
-    }
+		String payload = toLineProtocol(drained);
+		int attempts = 0;
+		long delay = properties.getRetryInitialDelayMs();
+		while (attempts <= properties.getMaxRetries()) {
+			try {
+				restTemplate.postForEntity(
+						url,
+						new HttpEntity<>(payload, createHeaders()),
+						String.class
+				);
+				return;
+			} catch (Exception exception) {
+				attempts++;
+				log.warn(
+						"[VMSimulationAdapter] write attempt {} failed, retrying after {} ms",
+						attempts,
+						delay,
+						exception
+				);
+				try {
+					Thread.sleep(delay);
+				} catch (InterruptedException interruptedException) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+				delay *= 2;
+			}
+		}
 
-    private long toNanoseconds(Instant timestamp) {
-        Instant value = timestamp == null ? Instant.now() : timestamp;
-        return value.getEpochSecond() * 1_000_000_000L + value.getNano();
-    }
+		log.error("[VMSimulationAdapter] exhausted retries writing {} points", drained.size());
+		requeueAtFront(drained);
+	}
 
-    private boolean isAbsoluteUrl(String url) {
-        try {
-            return url != null && new URI(url).isAbsolute();
-        } catch (Exception exception) {
-            return false;
-        }
-    }
+	int pendingPointCount() {
+		return queue.size();
+	}
 
-    private String escapeTag(String value) {
-        return value.replace(" ", "\\ ").replace(",", "\\,").replace("=", "\\=");
-    }
+	private HttpHeaders createHeaders() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.TEXT_PLAIN);
+		if ("bearer".equalsIgnoreCase(properties.getAuthType()) && properties.getToken() != null) {
+			headers.setBearerAuth(properties.getToken());
+		} else if ("basic".equalsIgnoreCase(properties.getAuthType()) && properties.getUsername() != null) {
+			String credentials = properties.getUsername() + ":"
+					+ (properties.getPassword() == null ? "" : properties.getPassword());
+			headers.setBasicAuth(Base64.getEncoder().encodeToString(
+					credentials.getBytes(StandardCharsets.UTF_8)
+			));
+		}
+		return headers;
+	}
+
+	private void requeueAtFront(List<SimulationMetricPoint> points) {
+		for (int index = points.size() - 1; index >= 0; index--) {
+			queue.offerFirst(points.get(index));
+		}
+	}
+
+	private String toLineProtocol(List<SimulationMetricPoint> points) {
+		StringBuilder payload = new StringBuilder();
+		for (SimulationMetricPoint point : points) {
+			payload.append(MEASUREMENT);
+			appendTag(payload, "simulationId", point.simulationId());
+			appendTag(payload, "roadId", point.roadId());
+			appendTag(payload, "direction", point.direction());
+			appendTag(payload, "vehicleType", point.vehicleType());
+			payload.append(' ');
+
+			boolean hasField = false;
+			hasField = appendField(payload, "vehicleCount", point.vehicleCount(), hasField, true);
+			hasField = appendField(payload, "averageSpeed", point.averageSpeed(), hasField, false);
+			hasField = appendField(payload, "totalCo2Emission", point.totalCo2Emission(), hasField, false);
+			hasField = appendField(payload, "averageTravelTime", point.averageTravelTime(), hasField, false);
+			hasField = appendField(payload, "averageWaitingTime", point.averageWaitingTime(), hasField, false);
+			hasField = appendField(payload, "averageTimeLoss", point.averageTimeLoss(), hasField, false);
+			appendField(payload, "totalRouteLength", point.totalRouteLength(), hasField, false);
+
+			Instant timestamp = point.timestamp() == null ? Instant.now() : point.timestamp();
+			long nanos = timestamp.getEpochSecond() * 1_000_000_000L + timestamp.getNano();
+			payload.append(' ').append(nanos).append('\n');
+		}
+		return payload.toString();
+	}
+
+	private void appendTag(StringBuilder payload, String name, String value) {
+		if (value != null) {
+			payload.append(',').append(name).append('=').append(escapeTag(value));
+		}
+	}
+
+	private boolean appendField(
+			StringBuilder payload,
+			String name,
+			Number value,
+			boolean hasField,
+			boolean integer
+	) {
+		if (value == null) {
+			return hasField;
+		}
+		if (hasField) {
+			payload.append(',');
+		}
+		payload.append(name).append('=').append(value);
+		if (integer) {
+			payload.append('i');
+		}
+		return true;
+	}
+
+	private String escapeTag(String value) {
+		return value.replace(" ", "\\ ").replace(",", "\\,").replace("=", "\\=");
+	}
+
+	private boolean isAbsoluteUrl(String url) {
+		try {
+			return new URI(url).isAbsolute();
+		} catch (Exception exception) {
+			return false;
+		}
+	}
 }

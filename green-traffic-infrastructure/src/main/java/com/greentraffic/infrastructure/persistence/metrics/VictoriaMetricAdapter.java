@@ -7,6 +7,7 @@ import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -22,9 +23,9 @@ import java.util.Base64;
 import java.time.Instant;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import jakarta.annotation.PostConstruct;
@@ -38,11 +39,16 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
     private final MetricsProperties props;
     private final RestTemplate rest;
 
+    @Autowired
     public VictoriaMetricAdapter(MetricsProperties props) {
-        this.props = props;
-        this.rest = new RestTemplate();
+        this(props, new RestTemplate());
     }
-    private final BlockingQueue<MetricPoint> queue = new LinkedBlockingQueue<>();
+
+    public VictoriaMetricAdapter(MetricsProperties props, RestTemplate rest) {
+        this.props = props;
+        this.rest = rest;
+    }
+    private final BlockingDeque<MetricPoint> queue = new LinkedBlockingDeque<>();
     private ScheduledExecutorService scheduler;
 
     @PostConstruct
@@ -152,16 +158,18 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
         return "traffic_metric";
     }
 
-    private synchronized void flush() {
+    synchronized void flush() {
+        List<MetricPoint> drained = List.of();
         try {
             int batchSize = Math.max(1, props.getBatchSize());
-            List<MetricPoint> drained = new ArrayList<>(batchSize);
+            drained = new ArrayList<>(batchSize);
             queue.drainTo(drained, batchSize);
             if (drained.isEmpty()) return;
             String payload = toLineProtocol(drained);
             String url = props.getVmUrl();
             if (url == null || url.isBlank() || !isAbsoluteUrl(url)) {
                 log.error("[VMAdapter] invalid or missing metrics.vmUrl configuration: {} - aborting write", url);
+                requeueAtFront(drained);
                 return;
             }
             int attempts = 0;
@@ -189,8 +197,20 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
                 }
             }
             log.error("[VMAdapter] exhausted retries writing {} points", drained.size());
+            requeueAtFront(drained);
         } catch (Exception ex) {
             log.error("[VMAdapter] unexpected flush error", ex);
+            requeueAtFront(drained);
+        }
+    }
+
+    int pendingPointCount() {
+        return queue.size();
+    }
+
+    private void requeueAtFront(List<MetricPoint> points) {
+        for (int index = points.size() - 1; index >= 0; index--) {
+            queue.offerFirst(points.get(index));
         }
     }
 

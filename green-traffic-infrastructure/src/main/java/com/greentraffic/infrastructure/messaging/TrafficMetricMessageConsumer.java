@@ -61,6 +61,7 @@ public class TrafficMetricMessageConsumer {
     }
 
     private void consume(Message<?> message) {
+        log.info("TrafficMetricMessageConsumer : 收到消息");
         if (message == null) {
             log.warn("Ignoring null traffic metric message");
             return;
@@ -69,65 +70,41 @@ public class TrafficMetricMessageConsumer {
         Object payload = message.getPayload();
 
         if (payload instanceof TrafficMetric metric) {
-            try {
-                writeUseCase.write(
-                        WriteTrafficMetricCommand.from(metric)
-                );
-            } catch (Exception e) {
-                log.warn(
-                        "Failed to process {} message",
-                        message.getMessageType(),
-                        e
-                );
-            }
+            writeUseCase.write(
+                    WriteTrafficMetricCommand.from(metric)
+            );
             return;
         }
 
         // 支持来自 model 层的仿真实体，也支持已经被转换为 core.domain 的仿真实体
         if (payload instanceof SimulationTrafficMetric simModel) {
-            try {
-                com.greentraffic.core.domain.traffic.SimulationTrafficMetric domainSim =
-                        new com.greentraffic.core.domain.traffic.SimulationTrafficMetric(
-                                simModel.simulationId(),
-                                simModel.roadId(),
-                                simModel.direction(),
-                                simModel.vehicleType(),
-                                simModel.vehicleCount(),
-                                simModel.averageSpeed(),
-                                simModel.totalCo2Emission(),
-                                simModel.averageTravelTime(),
-                                simModel.averageWaitingTime(),
-                                simModel.averageTimeLoss(),
-                                simModel.totalRouteLength(),
-                                simModel.timestamp()
-                        );
+            com.greentraffic.core.domain.traffic.SimulationTrafficMetric domainSim =
+                new com.greentraffic.core.domain.traffic.SimulationTrafficMetric(
+                    simModel.simulationId(),
+                    simModel.roadId(),
+                    simModel.direction(),
+                    simModel.vehicleType(),
+                    simModel.vehicleCount(),
+                    simModel.averageSpeed(),
+                    simModel.totalCo2Emission(),
+                    simModel.averageTravelTime(),
+                    simModel.averageWaitingTime(),
+                    simModel.averageTimeLoss(),
+                    simModel.totalRouteLength(),
+                    simModel.timestamp()
+                );
 
-                writeSimulationUseCase.write(
-                        WriteSimulationTrafficMetricCommand.from(domainSim)
-                );
-            } catch (Exception e) {
-                log.warn(
-                        "Failed to process {} message",
-                        message.getMessageType(),
-                        e
-                );
-            }
+            writeSimulationUseCase.write(
+                WriteSimulationTrafficMetricCommand.from(domainSim)
+            );
 
             return;
         }
 
         if (payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric domainSim) {
-            try {
-                writeSimulationUseCase.write(
-                        WriteSimulationTrafficMetricCommand.from(domainSim)
-                );
-            } catch (Exception e) {
-                log.warn(
-                        "Failed to process {} message",
-                        message.getMessageType(),
-                        e
-                );
-            }
+            writeSimulationUseCase.write(
+                WriteSimulationTrafficMetricCommand.from(domainSim)
+            );
 
             return;
         }

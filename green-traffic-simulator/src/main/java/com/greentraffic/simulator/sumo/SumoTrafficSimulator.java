@@ -41,6 +41,7 @@ public class SumoTrafficSimulator {
         this.messagePublisher = messagePublisher;
         this.properties = properties;
         this.objectMapper = objectMapper;
+        logger.info("SUMO仿真系统-定时任务-初始化---");
     }
 
     // @Scheduled(fixedDelayString = "${green-traffic.sumo.interval-ms:5000}")

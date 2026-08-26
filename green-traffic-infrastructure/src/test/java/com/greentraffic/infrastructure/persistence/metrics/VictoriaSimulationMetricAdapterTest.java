@@ -1,29 +1,109 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
+import com.greentraffic.core.port.output.SimulationMetricWritePort;
 import com.greentraffic.core.port.output.metrics.SimulationMetricPoint;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.http.HttpMethod;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.client.ExpectedCount.once;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class VictoriaSimulationMetricAdapterTest {
 
     @Test
-    void serializesSimulationMetricsAsVictoriaCompatibleLineProtocol() {
-        MetricsProperties properties = new MetricsProperties();
-        VictoriaSimulationMetricAdapter adapter = new VictoriaSimulationMetricAdapter(properties, new RestTemplate());
-        SimulationMetricPoint point = new SimulationMetricPoint(
-                "sim-1", "SUMO GRID", "UNKNOWN", "passenger", 2,
-                45.0, 0.08, 15.0, 3.0, 4.0, 400.0,
-                Instant.parse("2026-08-23T08:00:00Z"));
+    void registersSimulationWritePortForVictoriaMetricsStorage() {
+	try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+	    context.getEnvironment().getPropertySources().addFirst(new MapPropertySource(
+		    "victoriaSimulationMetricAdapterTest",
+		    Map.of("traffic.storage.type", "victoria-metrics")
+	    ));
+	    context.registerBean(MetricsProperties.class);
+	    context.registerBean(VictoriaSimulationMetricAdapter.class);
+	    context.refresh();
 
-        String payload = adapter.toLineProtocol(List.of(point));
+	    assertThat(context.getBean(SimulationMetricWritePort.class))
+		    .isInstanceOf(VictoriaSimulationMetricAdapter.class);
+	}
+    }
 
-        assertThat(payload).isEqualTo("sumo_traffic_metric,simulationId=sim-1,roadId=SUMO\\ GRID,direction=UNKNOWN,vehicleType=passenger "
-                + "vehicleCount=2i,averageSpeed=45.0,totalCo2Emission=0.08,averageTravelTime=15.0,averageWaitingTime=3.0,averageTimeLoss=4.0,totalRouteLength=400.0 1787472000000000000\n");
+    @Test
+    void writesSimulationPointUsingInfluxLineProtocol() {
+	MetricsProperties properties = properties();
+	RestTemplate restTemplate = new RestTemplate();
+	MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+	server.expect(once(), requestTo(properties.getVmUrl()))
+		.andExpect(method(HttpMethod.POST))
+		.andExpect(content().string(
+			"sumo_traffic_metric,simulationId=sim-1,roadId=ROAD-001,direction=EAST,vehicleType=CAR "
+				+ "vehicleCount=10i,averageSpeed=30.5,totalCo2Emission=2.5,averageTravelTime=12.0,"
+				+ "averageWaitingTime=1.0,averageTimeLoss=0.5,totalRouteLength=1000.0 "
+				+ "1787738400000000000\n"
+		))
+		.andRespond(withSuccess());
+	VictoriaSimulationMetricAdapter adapter =
+		new VictoriaSimulationMetricAdapter(properties, restTemplate);
+
+	adapter.write(List.of(point()));
+	adapter.flush();
+
+	assertThat(adapter.pendingPointCount()).isZero();
+	server.verify();
+    }
+
+    @Test
+    void requeuesSimulationPointsWhenWriteFails() {
+	MetricsProperties properties = properties();
+	properties.setMaxRetries(0);
+	properties.setRetryInitialDelayMs(0);
+	RestTemplate restTemplate = new RestTemplate();
+	MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+	server.expect(once(), requestTo(properties.getVmUrl()))
+		.andRespond(withServerError());
+	VictoriaSimulationMetricAdapter adapter =
+		new VictoriaSimulationMetricAdapter(properties, restTemplate);
+
+	adapter.write(List.of(point()));
+	adapter.flush();
+
+	assertThat(adapter.pendingPointCount()).isEqualTo(1);
+	server.verify();
+    }
+
+    private MetricsProperties properties() {
+	MetricsProperties properties = new MetricsProperties();
+	properties.setVmUrl("http://localhost:8428/write");
+	properties.setBatchSize(10);
+	return properties;
+    }
+
+    private SimulationMetricPoint point() {
+	return new SimulationMetricPoint(
+		"sim-1",
+		"ROAD-001",
+		"EAST",
+		"CAR",
+		10,
+		30.5,
+		2.5,
+		12.0,
+		1.0,
+		0.5,
+		1000.0,
+		Instant.parse("2026-08-26T10:00:00Z")
+	);
     }
 }
