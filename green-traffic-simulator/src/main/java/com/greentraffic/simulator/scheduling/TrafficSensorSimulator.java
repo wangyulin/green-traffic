@@ -6,12 +6,14 @@ import com.greentraffic.core.domain.traffic.TrafficMetric;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
+@ConditionalOnProperty(prefix = "green-traffic.simulator", name = "enabled", havingValue = "true", matchIfMissing = false)
 public class TrafficSensorSimulator {
 
     private final WriteTrafficMetricUseCase writeUseCase;

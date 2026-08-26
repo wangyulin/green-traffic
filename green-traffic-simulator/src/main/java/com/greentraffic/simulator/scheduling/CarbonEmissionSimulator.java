@@ -9,6 +9,7 @@ import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import org.springframework.beans.factory.NoUniqueBeanDefinitionException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.lang.invoke.MethodHandles;
 import java.time.*;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Component
+@ConditionalOnProperty(prefix = "green-traffic.simulator", name = "enabled", havingValue = "true", matchIfMissing = false)
 public class CarbonEmissionSimulator {
 
     private final MessagePublisher messagePublisher;

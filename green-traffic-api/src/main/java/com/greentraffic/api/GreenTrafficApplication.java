@@ -7,13 +7,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.EnableScheduling;
+// Scheduling is controlled by a conditional configuration to avoid starting scheduled tasks by default.
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
-@EnableScheduling
 @ConfigurationPropertiesScan(basePackages = "com.greentraffic")
 @SpringBootApplication(scanBasePackages = "com.greentraffic"
 //        ,

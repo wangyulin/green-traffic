@@ -51,3 +51,14 @@ management:
   health:
     db:
       enabled: true
+
+# 默认禁用全局调度与仿真模块，需显式开启
+app:
+  scheduling:
+    enabled: true
+
+green-traffic:
+  simulator:
+    enabled: true
+  sumo:
+    enabled: true
