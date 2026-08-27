@@ -1,69 +1,40 @@
 package com.greentraffic.infrastructure.messaging;
 
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.greentraffic.core.port.output.messaging.Message;
-import com.greentraffic.core.port.output.messaging.MessageSubscriber;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component
+/**
+ * Message 消息处理器（纯 handler，不负责订阅/注册）
+ */
 public class TrafficMetricMessageConsumer {
 
     private static final Logger log =
             LoggerFactory.getLogger(TrafficMetricMessageConsumer.class);
 
-    private final MessageSubscriber messageSubscriber;
-
     private final WriteTrafficMetricUseCase writeUseCase;
     private final WriteSimulationTrafficMetricUseCase writeSimulationUseCase;
 
     public TrafficMetricMessageConsumer(
-            MessageSubscriber messageSubscriber,
             WriteTrafficMetricUseCase writeUseCase,
             WriteSimulationTrafficMetricUseCase writeSimulationUseCase) {
 
-        this.messageSubscriber = messageSubscriber;
         this.writeUseCase = writeUseCase;
         this.writeSimulationUseCase = writeSimulationUseCase;
     }
 
-    @PostConstruct
-    void subscribe() {
-        messageSubscriber.subscribe(
-                TrafficMessageTypes.TRAFFIC_DATA,
-                this::consume
-        );
-
-        messageSubscriber.subscribe(
-                TrafficMessageTypes.CO2_EMISSION,
-                this::consume
-        );
-    }
-
-    @PreDestroy
-    void unsubscribe() {
-        messageSubscriber.unsubscribe(
-                TrafficMessageTypes.TRAFFIC_DATA
-        );
-
-        messageSubscriber.unsubscribe(
-                TrafficMessageTypes.CO2_EMISSION
-        );
-    }
-
-    private void consume(Message<?> message) {
+    public void consume(Message<?> message) {
         log.info("TrafficMetricMessageConsumer : 收到消息");
         if (message == null) {
             log.warn("Ignoring null traffic metric message");
@@ -79,6 +50,19 @@ public class TrafficMetricMessageConsumer {
 
         if (payload instanceof WriteSimulationTrafficMetricCommand simCmd) {
             writeSimulationUseCase.write(simCmd);
+            return;
+        }
+
+        // 兼容历史 Domain 对象：如果 Adapter 仍然发布 Domain 类型，转换为 Command 并处理
+        if (payload instanceof SimulationTrafficMetric simMetric) {
+            WriteSimulationTrafficMetricCommand simCmd = WriteSimulationTrafficMetricCommand.from(simMetric);
+            writeSimulationUseCase.write(simCmd);
+            return;
+        }
+
+        if (payload instanceof TrafficMetric metric) {
+            WriteTrafficMetricCommand cmd = WriteTrafficMetricCommand.from(metric);
+            writeUseCase.write(cmd);
             return;
         }
 

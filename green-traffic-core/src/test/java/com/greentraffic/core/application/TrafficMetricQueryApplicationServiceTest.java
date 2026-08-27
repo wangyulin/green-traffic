@@ -1,6 +1,7 @@
 package com.greentraffic.core.application;
 
 import com.greentraffic.core.domain.traffic.TrafficMetric;
+import com.greentraffic.core.application.query.model.TrafficMetricView;
 import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 
@@ -49,12 +50,13 @@ class TrafficMetricQueryApplicationServiceTest {
         when(queryPort.query(query))
                 .thenReturn(List.of(point));
 
-        List<TrafficMetric> metrics =
+
+        List<TrafficMetricView> metrics =
                 service.query(start, end);
 
         assertThat(metrics)
                 .containsExactly(
-                        new TrafficMetric(
+                        new TrafficMetricView(
                                 "ROAD-001",
                                 "EAST",
                                 "CAR",

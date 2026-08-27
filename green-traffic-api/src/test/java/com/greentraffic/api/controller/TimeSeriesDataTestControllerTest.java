@@ -3,7 +3,6 @@ package com.greentraffic.api.controller;
 import com.greentraffic.core.port.input.QueryTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import com.greentraffic.core.domain.traffic.TrafficMetric;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,7 +75,7 @@ class TimeSeriesDataTestControllerTest {
 
     @Test
     void readsMetricsThroughQueryInputPort() throws Exception {
-        TrafficMetric metric = new TrafficMetric(
+        com.greentraffic.core.application.query.model.TrafficMetricView metric = new com.greentraffic.core.application.query.model.TrafficMetricView(
                 "ROAD-001", "EAST", "CAR", 120, 42.5, 12.3, null,
                 Instant.parse("2026-08-22T10:00:00Z")
         );

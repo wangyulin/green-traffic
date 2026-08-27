@@ -3,7 +3,7 @@ package com.greentraffic.infrastructure.messaging.springevents;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.greentraffic.core.port.output.messaging.Message;
-import com.greentraffic.core.port.output.messaging.MessageSubscriber;
+import com.greentraffic.infrastructure.messaging.core.MessageSubscriber;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;

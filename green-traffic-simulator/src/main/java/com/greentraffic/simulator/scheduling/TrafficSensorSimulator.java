@@ -2,7 +2,6 @@ package com.greentraffic.simulator.scheduling;
 
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

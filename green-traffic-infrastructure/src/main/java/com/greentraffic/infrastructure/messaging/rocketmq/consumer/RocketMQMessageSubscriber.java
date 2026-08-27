@@ -1,7 +1,7 @@
 package com.greentraffic.infrastructure.messaging.rocketmq.consumer;
 
 import com.greentraffic.core.port.output.messaging.Message;
-import com.greentraffic.core.port.output.messaging.MessageSubscriber;
+import com.greentraffic.infrastructure.messaging.core.MessageSubscriber;
 import com.greentraffic.infrastructure.messaging.converter.MessagePayloadConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
