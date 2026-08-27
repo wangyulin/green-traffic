@@ -1,7 +1,8 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
 import com.greentraffic.core.port.output.SimulationMetricWritePort;
-import com.greentraffic.core.port.output.metrics.SimulationMetricPoint;
+import com.greentraffic.core.port.output.SimulationMetricStore;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -29,14 +30,14 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "victoria-metrics")
-public class VictoriaSimulationMetricAdapter implements SimulationMetricWritePort {
+public class VictoriaSimulationMetricAdapter implements SimulationMetricWritePort, SimulationMetricStore {
 
 	private static final Logger log = LoggerFactory.getLogger(VictoriaSimulationMetricAdapter.class);
 	private static final String MEASUREMENT = "sumo_traffic_metric";
 
 	private final MetricsProperties properties;
 	private final RestTemplate restTemplate;
-	private final BlockingDeque<SimulationMetricPoint> queue = new LinkedBlockingDeque<>();
+	private final BlockingDeque<SimulationTrafficMetric> queue = new LinkedBlockingDeque<>();
 	private ScheduledExecutorService scheduler;
 
 	@Autowired
@@ -73,7 +74,7 @@ public class VictoriaSimulationMetricAdapter implements SimulationMetricWritePor
 	}
 
 	@Override
-	public void write(List<SimulationMetricPoint> points) {
+	public void write(List<SimulationTrafficMetric> points) {
 		if (points == null || points.isEmpty()) {
 			return;
 		}
@@ -84,7 +85,7 @@ public class VictoriaSimulationMetricAdapter implements SimulationMetricWritePor
 	}
 
 	synchronized void flush() {
-		List<SimulationMetricPoint> drained = new ArrayList<>(Math.max(1, properties.getBatchSize()));
+		List<SimulationTrafficMetric> drained = new ArrayList<>(Math.max(1, properties.getBatchSize()));
 		queue.drainTo(drained, Math.max(1, properties.getBatchSize()));
 		if (drained.isEmpty()) {
 			return;
@@ -149,15 +150,15 @@ public class VictoriaSimulationMetricAdapter implements SimulationMetricWritePor
 		return headers;
 	}
 
-	private void requeueAtFront(List<SimulationMetricPoint> points) {
+	private void requeueAtFront(List<SimulationTrafficMetric> points) {
 		for (int index = points.size() - 1; index >= 0; index--) {
 			queue.offerFirst(points.get(index));
 		}
 	}
 
-	private String toLineProtocol(List<SimulationMetricPoint> points) {
+	private String toLineProtocol(List<SimulationTrafficMetric> points) {
 		StringBuilder payload = new StringBuilder();
-		for (SimulationMetricPoint point : points) {
+		for (SimulationTrafficMetric point : points) {
 			payload.append(MEASUREMENT);
 			appendTag(payload, "simulationId", point.simulationId());
 			appendTag(payload, "roadId", point.roadId());

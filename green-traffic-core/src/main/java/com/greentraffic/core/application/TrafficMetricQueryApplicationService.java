@@ -1,7 +1,6 @@
 package com.greentraffic.core.application;
 
-import com.greentraffic.core.port.output.metrics.MetricPoint;
-import com.greentraffic.core.port.output.MetricQueryPort;
+import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.input.QueryTrafficMetricUseCase;
 import com.greentraffic.core.domain.traffic.TrafficMetric;
 import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
@@ -11,34 +10,17 @@ import java.util.List;
 
 public class TrafficMetricQueryApplicationService implements QueryTrafficMetricUseCase {
 
-    private final MetricQueryPort queryPort;
+    private final TrafficMetricStore queryPort;
 
-    public TrafficMetricQueryApplicationService(MetricQueryPort queryPort) {
+    public TrafficMetricQueryApplicationService(TrafficMetricStore queryPort) {
         this.queryPort = queryPort;
     }
 
     @Override
     public List<TrafficMetric> query(Instant start, Instant end) {
 
-        TrafficMetricQuery query =
-                new TrafficMetricQuery(start, end);
-
-        return queryPort.query(query)
-                .stream()
-                .map(this::toTrafficMetric)
-                .toList();
+        TrafficMetricQuery query = new TrafficMetricQuery(start, end);
+        return queryPort.query(query);
     }
 
-    private TrafficMetric toTrafficMetric(MetricPoint point) {
-        return new TrafficMetric(
-                point.roadId(),
-                point.direction(),
-                point.vehicleType(),
-                point.trafficFlow(),
-                point.averageSpeed(),
-                point.co2Emission(),
-                point.location(),
-                point.timestamp()
-        );
-    }
 }

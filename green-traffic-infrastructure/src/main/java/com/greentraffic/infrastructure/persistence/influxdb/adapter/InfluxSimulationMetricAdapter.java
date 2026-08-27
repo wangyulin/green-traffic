@@ -1,7 +1,8 @@
 package com.greentraffic.infrastructure.persistence.influxdb.adapter;
 
-import com.greentraffic.core.port.output.metrics.SimulationMetricPoint;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import com.greentraffic.core.port.output.SimulationMetricWritePort;
+import com.greentraffic.core.port.output.SimulationMetricStore;
 import com.greentraffic.infrastructure.persistence.influxdb.client.InfluxDbClientProvider;
 import com.greentraffic.infrastructure.persistence.influxdb.config.InfluxDbProperties;
 import com.influxdb.client.InfluxDBClient;
@@ -15,7 +16,7 @@ import java.util.List;
 
 @Component
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "influx")
-public class InfluxSimulationMetricAdapter implements SimulationMetricWritePort {
+public class InfluxSimulationMetricAdapter implements SimulationMetricWritePort, SimulationMetricStore {
 
     private static final String MEASUREMENT = "sumo_traffic_metric";
     private final InfluxDBClient client;
@@ -27,7 +28,7 @@ public class InfluxSimulationMetricAdapter implements SimulationMetricWritePort 
     }
 
     @Override
-    public void write(List<SimulationMetricPoint> points) {
+    public void write(List<SimulationTrafficMetric> points) {
         if (points == null || points.isEmpty()) {
             return;
         }
@@ -35,7 +36,7 @@ public class InfluxSimulationMetricAdapter implements SimulationMetricWritePort 
                 points.stream().map(this::toPoint).toList());
     }
 
-    private Point toPoint(SimulationMetricPoint metric) {
+    private Point toPoint(SimulationTrafficMetric metric) {
         Point point = Point.measurement(MEASUREMENT)
                 .time(metric.timestamp() == null ? Instant.now() : metric.timestamp(), WritePrecision.NS)
                 .addTag("simulationId", metric.simulationId())

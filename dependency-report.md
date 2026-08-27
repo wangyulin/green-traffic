@@ -1,5 +1,7 @@
 # GreenTraffic 模块依赖报告
 
+<!-- 注：`green-traffic-model` 模块已移除；文中对该模块的历史引用保留为说明，实际模型已迁移到 `green-traffic-core` 或 `green-traffic-common` -->
+
 生成时间: 2026-08-26
 
 ## 模块列表（默认构建）

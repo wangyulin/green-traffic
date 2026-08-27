@@ -6,12 +6,11 @@ import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import java.util.List;
 
 /**
- * 交通指标查询 Port，返回域对象列表以保持核心层的领域模型一致性。
+ * 能力化 Port：交通指标存储（业务能力命名），替代技术导向的 MetricWritePort/MetricQueryPort。
  */
-public interface MetricQueryPort {
+public interface TrafficMetricStore {
 
-    /**
-     * 根据明确的交通指标查询条件查询领域指标。
-     */
+    void write(List<TrafficMetric> points);
+
     List<TrafficMetric> query(TrafficMetricQuery query);
 }

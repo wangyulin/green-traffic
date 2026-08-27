@@ -152,7 +152,9 @@ GreenTraffic 的核心目标不是简单展示交通数据，而是建立一条�
                 └─────────────────┘
 ```
 
-当前仓库的模块划分已经包括 `green-traffic-core`、`green-traffic-simulator`、`green-traffic-push`、`green-traffic-api`、`green-traffic-infrastructure`、`green-traffic-model`、`green-traffic-common` 和 `green-traffic-dashboard` 等模块。
+当前仓库的模块划分已经包括 `green-traffic-core`、`green-traffic-simulator`、`green-traffic-push`、`green-traffic-api`、`green-traffic-infrastructure`、`green-traffic-common` 和 `green-traffic-dashboard` 等模块。
+
+注：`green-traffic-model` 模块已移除；其领域模型已按本次重构迁移并归并到 `green-traffic-core` 或 `green-traffic-common`（文档中保留历史引用作为说明）。
 
 ---
 
@@ -238,8 +240,7 @@ green-traffic
 ├── green-traffic-infrastructure
 │   └── 数据库 / Repository Adapter / 基础设施实现
 │
-├── green-traffic-model
-│   └── Entity / DTO / VO / 数据模型
+<!-- green-traffic-model 已移除：模型已迁移到 core 或 common -->
 │
 ├── green-traffic-push
 │   └── WebSocket / 实时消息推送

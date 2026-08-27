@@ -1,7 +1,7 @@
 package com.greentraffic.core.application;
 
-import com.greentraffic.core.port.output.metrics.SimulationMetricPoint;
-import com.greentraffic.core.port.output.SimulationMetricWritePort;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.port.output.SimulationMetricStore;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -17,7 +17,7 @@ class SimulationMetricApplicationServiceTest {
 
     @Test
     void writesAllSimulationFieldsToTheOutputPort() {
-        SimulationMetricWritePort writePort = mock(SimulationMetricWritePort.class);
+        SimulationMetricStore writePort = mock(SimulationMetricStore.class);
         SimulationMetricApplicationService service = new SimulationMetricApplicationService(writePort);
         Instant timestamp = Instant.parse("2026-08-23T08:00:00Z");
 
@@ -26,10 +26,10 @@ class SimulationMetricApplicationServiceTest {
                 36.5, 2.4, 42.1, 6.2, 8.3, 1234.5, timestamp));
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<SimulationMetricPoint>> captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<SimulationTrafficMetric>> captor = ArgumentCaptor.forClass(List.class);
         verify(writePort).write(captor.capture());
-        assertThat(captor.getValue()).containsExactly(new SimulationMetricPoint(
+        assertThat(captor.getValue()).containsExactly(new SimulationTrafficMetric(
                 "sim-1", "edge-1", "EAST", "passenger", 20,
-                36.5, 2.4, 42.1, 6.2, 8.3, 1234.5, timestamp));
+            36.5, 2.4, 42.1, 6.2, 8.3, 1234.5, timestamp));
     }
 }

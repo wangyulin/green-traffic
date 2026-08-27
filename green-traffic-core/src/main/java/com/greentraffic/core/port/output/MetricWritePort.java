@@ -1,16 +1,15 @@
 package com.greentraffic.core.port.output;
 
-import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 
 import java.util.List;
 
 /**
- * Port for writing metrics to an external sink (InfluxDB, VictoriaMetrics, ...)
+ * Port for writing domain `TrafficMetric` to an external sink (InfluxDB, VictoriaMetrics, ...)
  */
 public interface MetricWritePort {
     /**
-     * Write a batch of metric points to the configured sink.
-     * Implementations should handle batching/retries as needed.
+     * Write a batch of domain metrics to the configured sink.
      */
-    void write(List<MetricPoint> points);
+    void write(List<TrafficMetric> points);
 }

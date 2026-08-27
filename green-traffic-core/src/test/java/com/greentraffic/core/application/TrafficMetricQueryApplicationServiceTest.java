@@ -1,8 +1,7 @@
 package com.greentraffic.core.application;
 
 import com.greentraffic.core.domain.traffic.TrafficMetric;
-import com.greentraffic.core.port.output.MetricQueryPort;
-import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 
 import org.junit.jupiter.api.Test;
@@ -20,8 +19,8 @@ class TrafficMetricQueryApplicationServiceTest {
     @Test
     void queriesMetricPortAndMapsPointsToTrafficMetrics() {
 
-        MetricQueryPort queryPort =
-                mock(MetricQueryPort.class);
+        TrafficMetricStore queryPort =
+                mock(TrafficMetricStore.class);
 
         TrafficMetricQueryApplicationService service =
                 new TrafficMetricQueryApplicationService(queryPort);
@@ -32,17 +31,17 @@ class TrafficMetricQueryApplicationServiceTest {
         Instant end =
                 Instant.parse("2026-08-22T11:00:00Z");
 
-        MetricPoint point =
-                new MetricPoint(
-                        "ROAD-001",
-                        "EAST",
-                        "CAR",
-                        120,
-                        42.5,
-                        12.3,
-                        "Wangjing",
-                        start
-                );
+                TrafficMetric point =
+                        new TrafficMetric(
+                                "ROAD-001",
+                                "EAST",
+                                "CAR",
+                                120,
+                                42.5,
+                                12.3,
+                                "Wangjing",
+                                start
+                        );
 
         TrafficMetricQuery query =
                 new TrafficMetricQuery(start, end);

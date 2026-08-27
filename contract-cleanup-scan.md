@@ -1,5 +1,7 @@
 # Contract Cleanup Scan — 初步建议
 
+<!-- 注：`green-traffic-model` 模块已移除；模型已迁移到 `green-traffic-core` 或 `green-traffic-common`，文中历史引用保留供参考 -->
+
 目标：识别并收口系统中的重复/迁移中的契约定义，确保 `core` 的 `core.port.output` 为契约单一来源。
 
 发现要点：

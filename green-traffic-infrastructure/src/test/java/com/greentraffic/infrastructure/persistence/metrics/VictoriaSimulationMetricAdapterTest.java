@@ -1,7 +1,7 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
 import com.greentraffic.core.port.output.SimulationMetricWritePort;
-import com.greentraffic.core.port.output.metrics.SimulationMetricPoint;
+import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -90,8 +90,8 @@ class VictoriaSimulationMetricAdapterTest {
 	return properties;
     }
 
-    private SimulationMetricPoint point() {
-	return new SimulationMetricPoint(
+	private SimulationTrafficMetric point() {
+	return new SimulationTrafficMetric(
 		"sim-1",
 		"ROAD-001",
 		"EAST",
@@ -105,5 +105,5 @@ class VictoriaSimulationMetricAdapterTest {
 		1000.0,
 		Instant.parse("2026-08-26T10:00:00Z")
 	);
-    }
+	}
 }

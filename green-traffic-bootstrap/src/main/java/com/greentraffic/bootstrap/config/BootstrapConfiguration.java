@@ -3,6 +3,8 @@ package com.greentraffic.bootstrap.config;
 import com.greentraffic.core.port.output.MetricQueryPort;
 import com.greentraffic.core.port.output.MetricWritePort;
 import com.greentraffic.core.port.output.SimulationMetricWritePort;
+import com.greentraffic.core.port.output.TrafficMetricStore;
+import com.greentraffic.core.port.output.SimulationMetricStore;
 import com.greentraffic.core.port.output.messaging.MessagePublisher;
 import com.greentraffic.core.port.output.messaging.MessageSubscriber;
 import com.greentraffic.core.port.output.simulation.SimulationEnginePort;
@@ -37,6 +39,19 @@ public class BootstrapConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(TrafficMetricStore.class)
+    public TrafficMetricStore trafficMetricStore(
+            ObjectProvider<InfluxTrafficMetricAdapter> influx,
+            ObjectProvider<VictoriaMetricAdapter> victoria
+    ) {
+        InfluxTrafficMetricAdapter i = influx.getIfAvailable();
+        if (i != null) return i;
+        VictoriaMetricAdapter v = victoria.getIfAvailable();
+        if (v != null) return v;
+        throw new IllegalStateException("No TrafficMetricStore implementation available");
+    }
+
+    @Bean
     @ConditionalOnMissingBean(MetricQueryPort.class)
     public MetricQueryPort metricQueryPort(
             ObjectProvider<InfluxTrafficMetricAdapter> influx,
@@ -60,6 +75,19 @@ public class BootstrapConfiguration {
         VictoriaSimulationMetricAdapter v = victoriaSim.getIfAvailable();
         if (v != null) return v;
         throw new IllegalStateException("No SimulationMetricWritePort implementation available");
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(SimulationMetricStore.class)
+    public SimulationMetricStore simulationMetricStore(
+            ObjectProvider<InfluxSimulationMetricAdapter> influxSim,
+            ObjectProvider<VictoriaSimulationMetricAdapter> victoriaSim
+    ) {
+        InfluxSimulationMetricAdapter i = influxSim.getIfAvailable();
+        if (i != null) return i;
+        VictoriaSimulationMetricAdapter v = victoriaSim.getIfAvailable();
+        if (v != null) return v;
+        throw new IllegalStateException("No SimulationMetricStore implementation available");
     }
 
     @Bean

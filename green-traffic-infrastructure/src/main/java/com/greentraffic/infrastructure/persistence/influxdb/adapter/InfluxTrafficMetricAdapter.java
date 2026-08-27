@@ -1,8 +1,9 @@
 package com.greentraffic.infrastructure.persistence.influxdb.adapter;
 
-import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import com.greentraffic.core.port.output.MetricQueryPort;
 import com.greentraffic.core.port.output.MetricWritePort;
+import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import com.greentraffic.infrastructure.persistence.influxdb.client.InfluxDbClientProvider;
 import com.greentraffic.infrastructure.persistence.influxdb.config.InfluxDbProperties;
@@ -21,7 +22,7 @@ import java.util.Map;
 
 @Component
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "influx")
-public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryPort {
+public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryPort, TrafficMetricStore {
 
     private static final String MEASUREMENT = "traffic_metric";
 
@@ -34,7 +35,7 @@ public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryP
     }
 
     @Override
-    public void write(List<MetricPoint> points) {
+    public void write(List<TrafficMetric> points) {
         if (points == null || points.isEmpty()) {
             return;
         }
@@ -46,7 +47,7 @@ public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryP
     }
 
     @Override
-    public List<MetricPoint> query(TrafficMetricQuery query) {
+    public List<TrafficMetric> query(TrafficMetricQuery query) {
 
         String flux = """
                 from(bucket: "%s")
@@ -64,14 +65,14 @@ public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryP
                 MEASUREMENT
         );
 
-        List<MetricPoint> result = new ArrayList<>();
+        List<TrafficMetric> result = new ArrayList<>();
 
         for (FluxTable table :
                 client.getQueryApi().query(flux, properties.getOrg())) {
 
             for (FluxRecord record : table.getRecords()) {
 
-                result.add(new MetricPoint(
+                result.add(new TrafficMetric(
                         stringValue(record, "roadId"),
                         stringValue(record, "direction"),
                         stringValue(record, "vehicleType"),
@@ -87,7 +88,7 @@ public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryP
         return result;
     }
 
-    private Point toPoint(MetricPoint point) {
+    private Point toPoint(TrafficMetric point) {
         Point influxPoint = Point.measurement(MEASUREMENT)
                 .time(point.timestamp() == null ? Instant.now() : point.timestamp(), WritePrecision.NS);
         addTag(influxPoint, "roadId", point.roadId());

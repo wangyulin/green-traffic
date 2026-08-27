@@ -136,87 +136,14 @@ IdUtils
 
 ---
 
-# 2. `green-traffic-model`
+## 2. `green-traffic-model`（模块迁移说明）
 
-### 定位：**整个系统的数据模型层**
+注：`green-traffic-model` 模块已从代码库中移除。本仓库的领域模型现已按架构重构迁移到：
 
-这个模块非常重要。
+- `green-traffic-core`：核心业务相关的领域对象（如 `TrafficMetric`、`SimulationTrafficMetric`、应用服务与端口契约）；
+- `green-traffic-common`：工具型或跨模块共享的 DTO/VO/通用类型（如通用响应、时间工具等）。
 
-它负责定义：
-
-> “系统里面有什么数据？”
-
-目录：
-
-```text
-green-traffic-model
-└── src/main/java/com/greentraffic/model/
-    ├── entity/
-    ├── dto/
-    ├── vo/
-    └── enums/
-```
-
----
-
-## `entity/`
-
-数据库实体。
-
-例如：
-
-```text
-Vehicle
-TrafficFlow
-TrafficSensor
-CarbonEmission
-TrafficAlarm
-OptimizationSuggestion
-```
-
-比如：
-
-```java
-@Entity
-public class TrafficFlow {
-
-    private Long id;
-
-    private String sensorId;
-
-    private Integer vehicleCount;
-
-    private LocalDateTime collectTime;
-}
-```
-
-这些 Entity 最终会和数据库表对应。
-
----
-
-## `dto/`
-
-DTO：
-
-> 前端/外部系统 → 后端
-
-例如：
-
-```text
-TrafficQueryDTO
-VehicleQueryDTO
-EmissionQueryDTO
-```
-
-例如前端：
-
-```json
-{
-  "roadId": "ROAD-001",
-  "startTime": "...",
-  "endTime": "..."
-}
-```
+文档中原有的 `green-traffic-model` 示例保留为历史参考，但请以 `core`/`common` 中的实际类为准。
 
 对应：
 

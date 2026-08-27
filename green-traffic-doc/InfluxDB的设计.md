@@ -538,7 +538,9 @@ fields
     vehicle_count=125
     speed=42.5
 
-time
+<!-- 注：`green-traffic-model` 模块已移除；文中对其的历史引用保留为参考，实际模型已迁移到 `green-traffic-core` 或 `green-traffic-common` -->
+
+
     2026-08-20T15:00:00Z
 ```
 

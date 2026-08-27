@@ -52,12 +52,13 @@
 
 # 2. 当前项目实际结构
 
+<!-- 注：`green-traffic-model` 模块已移除；其历史位置和示例引用保留在文档中以供参考，实际领域模型已迁移到 `green-traffic-core` 或 `green-traffic-common` -->
+
 当前根 POM 已经是多模块 Maven 项目：
 
 ```text
 green-traffic
 ├── green-traffic-common
-├── green-traffic-model
 ├── green-traffic-simulator
 ├── green-traffic-core
 ├── green-traffic-push

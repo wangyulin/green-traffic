@@ -1,8 +1,9 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
-import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import com.greentraffic.core.port.output.MetricQueryPort;
 import com.greentraffic.core.port.output.MetricWritePort;
+import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ import jakarta.annotation.PreDestroy;
 
 @Service
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "victoria-metrics")
-public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
+public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort, TrafficMetricStore {
     private static final Logger log = LoggerFactory.getLogger(VictoriaMetricAdapter.class);
 
     private final MetricsProperties props;
@@ -48,7 +49,7 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
         this.props = props;
         this.rest = rest;
     }
-    private final BlockingDeque<MetricPoint> queue = new LinkedBlockingDeque<>();
+    private final BlockingDeque<TrafficMetric> queue = new LinkedBlockingDeque<>();
     private ScheduledExecutorService scheduler;
 
     @PostConstruct
@@ -70,9 +71,9 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
     }
 
     @Override
-    public void write(List<MetricPoint> points) {
+    public void write(List<TrafficMetric> points) {
         if (points == null || points.isEmpty()) return;
-        for (MetricPoint p : points) {
+        for (TrafficMetric p : points) {
             queue.offer(p);
         }
         if (queue.size() >= Math.max(1, props.getBatchSize())) {
@@ -82,7 +83,7 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
     }
 
     @Override
-    public List<MetricPoint> query(TrafficMetricQuery query) {
+    public List<TrafficMetric> query(TrafficMetricQuery query) {
 
         String queryUrl = props.getVmQueryUrl();
 
@@ -120,8 +121,8 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
         }
     }
 
-    private List<MetricPoint> toMetricPoints(JsonNode response) {
-        List<MetricPoint> points = new ArrayList<>();
+    private List<TrafficMetric> toMetricPoints(JsonNode response) {
+        List<TrafficMetric> points = new ArrayList<>();
         if (response == null || !"success".equals(response.path("status").asText())) {
             return points;
         }
@@ -131,15 +132,15 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
                 if (sample.size() != 2) {
                     continue;
                 }
-                points.add(new MetricPoint(
-                        labels.path("roadId").asText(null),
-                        labels.path("direction").asText(null),
-                        labels.path("vehicleType").asText(null),
-                        parseInteger(sample.get(1).asText()),
-                        null,
-                        null,
-                        labels.path("location").asText(null),
-                        Instant.ofEpochSecond(sample.get(0).asLong())
+                points.add(new TrafficMetric(
+                    labels.path("roadId").asText(null),
+                    labels.path("direction").asText(null),
+                    labels.path("vehicleType").asText(null),
+                    parseInteger(sample.get(1).asText()),
+                    null,
+                    null,
+                    labels.path("location").asText(null),
+                    Instant.ofEpochSecond(sample.get(0).asLong())
                 ));
             }
         }
@@ -159,7 +160,7 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
     }
 
     synchronized void flush() {
-        List<MetricPoint> drained = List.of();
+        List<TrafficMetric> drained = List.of();
         try {
             int batchSize = Math.max(1, props.getBatchSize());
             drained = new ArrayList<>(batchSize);
@@ -208,7 +209,7 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
         return queue.size();
     }
 
-    private void requeueAtFront(List<MetricPoint> points) {
+    private void requeueAtFront(List<TrafficMetric> points) {
         for (int index = points.size() - 1; index >= 0; index--) {
             queue.offerFirst(points.get(index));
         }
@@ -223,9 +224,9 @@ public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort {
         }
     }
 
-    private String toLineProtocol(List<MetricPoint> points) {
+    private String toLineProtocol(List<TrafficMetric> points) {
         StringBuilder sb = new StringBuilder();
-        for (MetricPoint p : points) {
+        for (TrafficMetric p : points) {
             sb.append("traffic_metric");
             if (p.roadId() != null) sb.append(",roadId=").append(escapeTag(p.roadId()));
             if (p.direction() != null) sb.append(",direction=").append(escapeTag(p.direction()));

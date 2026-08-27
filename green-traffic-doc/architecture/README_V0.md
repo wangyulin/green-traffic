@@ -342,11 +342,11 @@ public enum ErrorCode {
 }
 ```
 
-### 4.2 green-traffic-model（数据模型模块）
+### 4.2 green-traffic-model（已移除 / 模型迁移说明）
 
-**模块定位：** 定义系统所有数据结构，是各模块之间的"通信契约"。只包含 POJO，零业务逻辑。
+注：历史上的 `green-traffic-model` 模块已被移除。为保持六边形架构边界清晰，领域模型已迁移到 `green-traffic-core`（领域对象与端口）或 `green-traffic-common`（通用 DTO/VO）。文档中的实体示例保留为参考。
 
-**实体类详细设计：**
+**后续建议：** 将模型定义集中在 `core` 的 `domain` 包中，避免通用模块承担具体业务模型的职责。
 
 #### Intersection（路口实体）
 

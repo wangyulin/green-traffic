@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
-import com.greentraffic.core.port.output.metrics.MetricPoint;
+import com.greentraffic.core.domain.traffic.TrafficMetric;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -52,7 +52,7 @@ class VictoriaMetricAdapterTest {
                 .andExpect(method(HttpMethod.POST))
                 .andRespond(withServerError());
         VictoriaMetricAdapter adapter = new VictoriaMetricAdapter(properties, restTemplate);
-        MetricPoint point = new MetricPoint(
+        TrafficMetric point = new TrafficMetric(
                 "ROAD-001", "EAST", "CAR", 10, 30.0, 2.0, null, Instant.now()
         );
 
@@ -72,7 +72,7 @@ class VictoriaMetricAdapterTest {
                 new RestTemplate()
         );
 
-        adapter.write(List.of(new MetricPoint(
+        adapter.write(List.of(new TrafficMetric(
                 "ROAD-002", "WEST", "BUS", 5, 20.0, 1.0, null, Instant.now()
         )));
         adapter.flush();

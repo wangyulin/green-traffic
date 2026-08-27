@@ -6,9 +6,8 @@ import com.greentraffic.core.application.TrafficMetricQueryApplicationService;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase;
 import com.greentraffic.core.port.input.QueryTrafficMetricUseCase;
-import com.greentraffic.core.port.output.MetricWritePort;
-import com.greentraffic.core.port.output.SimulationMetricWritePort;
-import com.greentraffic.core.port.output.MetricQueryPort;
+import com.greentraffic.core.port.output.TrafficMetricStore;
+import com.greentraffic.core.port.output.SimulationMetricStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,12 +20,12 @@ import org.springframework.context.annotation.Configuration;
 public class ApplicationServiceConfiguration {
 
     @Bean
-    public WriteTrafficMetricUseCase writeTrafficMetricUseCase(MetricWritePort writePort) {
+    public WriteTrafficMetricUseCase writeTrafficMetricUseCase(TrafficMetricStore writePort) {
         return new MetricApplicationService(writePort);
     }
 
     @Bean
-    public WriteSimulationTrafficMetricUseCase writeSimulationTrafficMetricUseCase(SimulationMetricWritePort writePort) {
+    public WriteSimulationTrafficMetricUseCase writeSimulationTrafficMetricUseCase(SimulationMetricStore writePort) {
         return new SimulationMetricApplicationService(writePort);
     }
 
@@ -36,7 +35,7 @@ public class ApplicationServiceConfiguration {
     }
 
     @Bean
-    public QueryTrafficMetricUseCase queryTrafficMetricUseCase(MetricQueryPort queryPort) {
+    public QueryTrafficMetricUseCase queryTrafficMetricUseCase(TrafficMetricStore queryPort) {
         return new TrafficMetricQueryApplicationService(queryPort);
     }
 }

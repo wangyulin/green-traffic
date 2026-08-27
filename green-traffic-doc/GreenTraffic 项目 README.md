@@ -38,11 +38,7 @@ green-traffic
 │       ├── 错误码
 │       └── 通用工具
 │
-├── green-traffic-model
-│   └── 数据模型
-│       ├── Intersection
-│       ├── TrafficData
-│       └── OptimizationAdvice
+<!-- green-traffic-model 模块已移除；领域模型已迁移到 `green-traffic-core` 或 `green-traffic-common` -->
 │
 ├── green-traffic-simulator
 │   └── 交通数据模拟

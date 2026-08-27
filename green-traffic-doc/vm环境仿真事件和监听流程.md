@@ -9,9 +9,9 @@
 
 - 消费者（业务消费）：`TrafficMetricMessageConsumer` 在启动时订阅了 `traffic.data` 与 `co2.emission`，其 `consume` 方法把 `Message` 的 payload 转为 `TrafficMetric` 后，调用输入端口 `WriteTrafficMetricUseCase`。参见 `TrafficMetricMessageConsumer` — `TrafficMetricMessageConsumer.java`
 
-- 核心用例（端口→应用服务）：`WriteTrafficMetricUseCase` 的实现 `MetricApplicationService.write(...)` 将 `WriteTrafficMetricCommand` 转为 `MetricPoint`，并调用输出端口 `MetricWritePort`。参见 `MetricApplicationService` — `MetricApplicationService.java`
+- 核心用例（端口→应用服务）：`WriteTrafficMetricUseCase` 的实现 `MetricApplicationService.write(...)` 将 `WriteTrafficMetricCommand` 转为 ~~MetricPoint~~（已迁移为域对象 `TrafficMetric`），并调用输出端口 `MetricWritePort`。参见 `MetricApplicationService` — `MetricApplicationService.java`
 
-- 写入时序库（Adapter）：`MetricWritePort` 在 vm 配置下由 `VictoriaMetricAdapter` 实现，它把 `MetricPoint` 批量转换为 Influx line-protocol（或 VM 支持的格式），并通过 HTTP 写入 VictoriaMetrics（有异步批量/重试逻辑）。参见 `VictoriaMetricAdapter.write`（及 flush 实现） — `VictoriaMetricAdapter.java`
+- 写入时序库（Adapter）：`MetricWritePort` 在 vm 配置下由 `VictoriaMetricAdapter` 实现，它把 ~~MetricPoint~~（已迁移为域对象 `TrafficMetric`）批量转换为 Influx line-protocol（或 VM 支持的格式），并通过 HTTP 写入 VictoriaMetrics（有异步批量/重试逻辑）。参见 `VictoriaMetricAdapter.write`（及 flush 实现） — `VictoriaMetricAdapter.java`
 
 要点和调试建议：
 - 若 payload 丢失或类型不对，先在 `RocketMQMessageSubscriber.normalizeMetricPayload` 打断点/日志，查看原始 `Message.payload`（JSON→Java 映射是否正确）。  
