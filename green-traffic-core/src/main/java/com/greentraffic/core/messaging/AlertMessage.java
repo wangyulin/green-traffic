@@ -66,30 +66,31 @@ public class AlertMessage implements Serializable {
         }
     }
 
-    public static AlertMessage createCo2Alert(String roadId, Double co2Emission) {
+    // Factories that accept id/time from composition root (preferred for testability)
+    public static AlertMessage createCo2Alert(String alertId, String roadId, Double co2Emission, Instant alertTime) {
         return AlertMessage.builder()
-                .alertId(java.util.UUID.randomUUID().toString())
+                .alertId(alertId)
                 .alertType(AlertType.CO2_EMISSION_HIGH)
                 .alertLevel(co2Emission != null && co2Emission > 100 ? AlertLevel.CRITICAL : AlertLevel.WARNING)
                 .title("碳排放超标告警")
                 .content(String.format("道路 %s 碳排放超标，当前值: %.2f", roadId, co2Emission))
                 .roadId(roadId)
                 .co2Emission(co2Emission)
-                .alertTime(Instant.now())
+                .alertTime(alertTime)
                 .processed(false)
                 .build();
     }
 
-    public static AlertMessage createCongestionAlert(String roadId, Double averageSpeed) {
+    public static AlertMessage createCongestionAlert(String alertId, String roadId, Double averageSpeed, Instant alertTime) {
         return AlertMessage.builder()
-                .alertId(java.util.UUID.randomUUID().toString())
+                .alertId(alertId)
                 .alertType(AlertType.TRAFFIC_CONGESTION)
                 .alertLevel(averageSpeed != null && averageSpeed < 10 ? AlertLevel.CRITICAL : AlertLevel.WARNING)
                 .title("交通拥堵告警")
                 .content(String.format("道路 %s 交通拥堵，平均速度: %.2f km/h", roadId, averageSpeed))
                 .roadId(roadId)
                 .averageSpeed(averageSpeed)
-                .alertTime(Instant.now())
+                .alertTime(alertTime)
                 .processed(false)
                 .build();
     }

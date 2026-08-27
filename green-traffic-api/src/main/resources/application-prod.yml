@@ -1,10 +1,7 @@
 spring:
-  autoconfigure:
-    exclude:
-      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
   application:
     name: green-traffic
-  # 使用 Spring Events，无需额外配置
+  # 生产环境使用 RocketMQ；请勿排除 RocketMQ AutoConfiguration
   main:
     allow-bean-definition-overriding: true
   datasource:

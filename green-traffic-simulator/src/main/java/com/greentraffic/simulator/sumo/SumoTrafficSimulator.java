@@ -32,27 +32,45 @@ public class SumoTrafficSimulator {
     private final SumoSimulatorProperties properties;
 
     private final ObjectMapper objectMapper;
+    private final com.greentraffic.core.port.util.IdGenerator idGenerator;
+    private final java.time.Clock clock;
 
     public SumoTrafficSimulator(
             SimulationEnginePort sumoSimulationPort,
             MessagePublisher messagePublisher,
-            SumoSimulatorProperties properties, ObjectMapper objectMapper) {
+            SumoSimulatorProperties properties,
+            ObjectMapper objectMapper,
+            com.greentraffic.core.port.util.IdGenerator idGenerator,
+            java.time.Clock clock) {
         this.sumoSimulationPort = sumoSimulationPort;
         this.messagePublisher = messagePublisher;
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.idGenerator = idGenerator;
+        this.clock = clock;
         logger.info("SUMO仿真系统-定时任务-初始化---");
     }
 
     @Scheduled(fixedDelayString = "${green-traffic.sumo.interval-ms:5000}")
     public void simulateAndPublish() {
         logger.info("SUMO仿真系统-定时任务-触发---");
-        String simulationId = UUID.randomUUID().toString();
-        List<SumoTripInfo> trips = sumoSimulationPort.run(new SumoSimulationRequest(
+        String simulationId = idGenerator.generate();
+        if (properties.isAsyncRun()) {
+            // start async simulation and return immediately; background adapter is responsible for publishing
+            String started = sumoSimulationPort.runAsync(new SumoSimulationRequest(
                 simulationId,
                 properties.getWorkingDirectory(),
                 properties.getDurationSeconds(),
                 properties.getVehiclesPerHour()));
+            logger.info("Started async SUMO simulation: {} (requested {})", started, simulationId);
+            return;
+        }
+
+        List<SumoTripInfo> trips = sumoSimulationPort.run(new SumoSimulationRequest(
+            simulationId,
+            properties.getWorkingDirectory(),
+            properties.getDurationSeconds(),
+            properties.getVehiclesPerHour()));
 
         String trips_json = null;
         try {
@@ -61,7 +79,7 @@ public class SumoTrafficSimulator {
             logger.warn("Failed to serialize SUMO trips: {}", e.getMessage());
         }
         // logger.info("SUMO 当前生成的数据 trips : {}", trips_json);
-        WriteSimulationTrafficMetricCommand metric = SumoTrafficMetricMapper.map(simulationId, trips, Instant.now());
+        WriteSimulationTrafficMetricCommand metric = SumoTrafficMetricMapper.map(simulationId, trips, java.time.Instant.now(clock));
 
         String metric_json = null;
         try {
@@ -73,10 +91,10 @@ public class SumoTrafficSimulator {
 
         if (metric != null) {
             try {
-                messagePublisher.publishAsync(Message.of(TrafficMessageTypes.TRAFFIC_DATA_BATCH, metric));
+                messagePublisher.publishAsync(Message.of(TrafficMessageTypes.TRAFFIC_DATA_BATCH, metric, idGenerator, clock));
             } catch (org.springframework.beans.factory.NoUniqueBeanDefinitionException ex) {
                 logger.warn("检测到多个 TaskExecutor bean，回退使用同步 publish(): {}", ex.getMessage());
-                messagePublisher.publish(Message.of(TrafficMessageTypes.TRAFFIC_DATA_BATCH, metric));
+                messagePublisher.publish(Message.of(TrafficMessageTypes.TRAFFIC_DATA_BATCH, metric, idGenerator, clock));
             }
         }
     }

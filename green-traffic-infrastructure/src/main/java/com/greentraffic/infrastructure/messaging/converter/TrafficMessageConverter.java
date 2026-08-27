@@ -56,17 +56,12 @@ public class TrafficMessageConverter
         }
 
         Object payload = message.getPayload();
-
-        // 如果 payload 已经是 WriteTrafficMetricCommand 或核心领域对象，允许转换
+        // 仅接受已经是 Command，或者可映射为 WriteTrafficMetricCommand 的 Map/JSON。
         if (payload instanceof WriteTrafficMetricCommand) {
             return true;
         }
 
-        if (payload instanceof com.greentraffic.core.domain.traffic.TrafficMetric) {
-            return true;
-        }
-
-        // 如果 payload 是仿真消息，应由 SimulationTrafficMessageConverter 处理。
+        // 仿真消息应由 SimulationTrafficMessageConverter 处理
         if (payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric) {
             return false;
         }
@@ -75,18 +70,12 @@ public class TrafficMessageConverter
             return false;
         }
 
-        // 其他 Map/JSON 物料也可尝试映射为 WriteTrafficMetricCommand
-        return true;
+        return payload instanceof Map || payload instanceof String || payload == null;
     }
 
     @Override
     public Message<WriteTrafficMetricCommand> convert(Message<?> message) {
         if (message.getPayload() instanceof WriteTrafficMetricCommand cmd) {
-            return copyWithPayload(message, cmd);
-        }
-
-        if (message.getPayload() instanceof com.greentraffic.core.domain.traffic.TrafficMetric domain) {
-            WriteTrafficMetricCommand cmd = WriteTrafficMetricCommand.from(domain);
             return copyWithPayload(message, cmd);
         }
 

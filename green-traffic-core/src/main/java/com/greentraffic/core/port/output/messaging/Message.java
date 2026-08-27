@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -83,12 +84,24 @@ public class Message<T> implements Serializable {
      * 创建消息
      */
     public static <T> Message<T> of(String messageType, T payload) {
+        String seed = messageType + (payload == null ? "" : payload.toString());
+        String id = UUID.nameUUIDFromBytes(seed.getBytes()).toString();
         return Message.<T>builder()
-                .messageId(UUID.randomUUID().toString())
+                .messageId(id)
                 .messageType(messageType)
                 .schemaVersion("1.0")
                 .payload(payload)
-                .timestamp(Instant.now())
+                .timestamp(Instant.now(Clock.systemUTC()))
+                .build();
+    }
+
+    public static <T> Message<T> of(String messageType, T payload, com.greentraffic.core.port.util.IdGenerator idGenerator, Clock clock) {
+        return Message.<T>builder()
+                .messageId(idGenerator.generate())
+                .messageType(messageType)
+                .schemaVersion("1.0")
+                .payload(payload)
+                .timestamp(Instant.now(clock))
                 .build();
     }
 

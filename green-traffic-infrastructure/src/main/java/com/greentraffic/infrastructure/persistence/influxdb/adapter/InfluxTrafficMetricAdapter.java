@@ -89,6 +89,7 @@ public class InfluxTrafficMetricAdapter implements TrafficMetricStore {
     private Point toPoint(TrafficMetric point) {
         Point influxPoint = Point.measurement(MEASUREMENT)
                 .time(point.timestamp() == null ? Instant.now() : point.timestamp(), WritePrecision.NS);
+        influxPoint.addTag("source", "simulator");
         addTag(influxPoint, "roadId", point.roadId());
         addTag(influxPoint, "direction", point.direction());
         addTag(influxPoint, "vehicleType", point.vehicleType());

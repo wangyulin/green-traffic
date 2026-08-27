@@ -41,8 +41,8 @@ public class TrafficMetricMessageConsumer {
             return;
         }
         Object payload = message.getPayload();
-
-        // 优先处理传输层的 Command 对象（Adapter 应该发布 Command/DTO 而不是直接 Domain）
+        // 现在严格只接受 Command 层面的载荷；入站 Adapter/Subscriber 应该通过
+        // MessagePayloadConverter 将外部 DTO/Map/JSON 转换为 Command。
         if (payload instanceof WriteTrafficMetricCommand cmd) {
             writeUseCase.write(cmd);
             return;
@@ -51,39 +51,6 @@ public class TrafficMetricMessageConsumer {
         if (payload instanceof WriteSimulationTrafficMetricCommand simCmd) {
             writeSimulationUseCase.write(simCmd);
             return;
-        }
-
-        // 兼容历史 Domain 对象：如果 Adapter 仍然发布 Domain 类型，转换为 Command 并处理
-        if (payload instanceof SimulationTrafficMetric simMetric) {
-            WriteSimulationTrafficMetricCommand simCmd = WriteSimulationTrafficMetricCommand.from(simMetric);
-            writeSimulationUseCase.write(simCmd);
-            return;
-        }
-
-        if (payload instanceof TrafficMetric metric) {
-            WriteTrafficMetricCommand cmd = WriteTrafficMetricCommand.from(metric);
-            writeUseCase.write(cmd);
-            return;
-        }
-
-        // 兼容历史 Map 载荷：将 Map 转换为 Command（移除对 domain 类型的直接引用）
-        if (payload instanceof Map<?, ?> map) {
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                mapper.registerModule(new JavaTimeModule());
-                mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-            } catch (NoClassDefFoundError ignored) {
-            }
-
-            if (map.containsKey("simulationId")) {
-                WriteSimulationTrafficMetricCommand simCmd = mapper.convertValue(map, WriteSimulationTrafficMetricCommand.class);
-                writeSimulationUseCase.write(simCmd);
-                return;
-            } else {
-                WriteTrafficMetricCommand cmd = mapper.convertValue(map, WriteTrafficMetricCommand.class);
-                writeUseCase.write(cmd);
-                return;
-            }
         }
 
         log.warn(

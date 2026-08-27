@@ -51,6 +51,7 @@ public class VictoriaSimulationMetricAdapter implements SimulationMetricStore {
 
 	@PostConstruct
 	public void start() {
+		org.slf4j.LoggerFactory.getLogger(VictoriaSimulationMetricAdapter.class).info("[VMSimulationAdapter] initialized (vmUrl={})", properties.getVmUrl());
 		scheduler = Executors.newSingleThreadScheduledExecutor(runnable -> {
 			Thread thread = new Thread(runnable, "vm-simulation-metrics-flusher");
 			thread.setDaemon(true);
@@ -77,6 +78,7 @@ public class VictoriaSimulationMetricAdapter implements SimulationMetricStore {
 		if (points == null || points.isEmpty()) {
 			return;
 		}
+		log.debug("[VMSimulationAdapter] write() received {} points", points.size());
 		points.forEach(queue::offerLast);
 		if (scheduler != null && queue.size() >= Math.max(1, properties.getBatchSize())) {
 			scheduler.execute(this::flush);
@@ -127,6 +129,29 @@ public class VictoriaSimulationMetricAdapter implements SimulationMetricStore {
 		}
 
 		log.error("[VMSimulationAdapter] exhausted retries writing {} points", drained.size());
+		// fallback behavior: either write to local fallback file, drop, or requeue
+		String fallback = properties.getFallbackFilePath();
+		if (fallback != null && !fallback.isBlank()) {
+			try {
+				java.nio.file.Files.writeString(
+					java.nio.file.Path.of(fallback),
+					toLineProtocol(drained),
+					java.nio.file.StandardOpenOption.CREATE,
+					java.nio.file.StandardOpenOption.APPEND
+				);
+				log.info("[VMSimulationAdapter] wrote failed payload to fallback file: {}", fallback);
+			} catch (Exception e) {
+				log.error("[VMSimulationAdapter] failed to write fallback file {}: {}", fallback, e.getMessage());
+				requeueAtFront(drained);
+			}
+			return;
+		}
+
+		if (properties.isDropOnFailure()) {
+			log.warn("[VMSimulationAdapter] dropping {} points after exhausted retries", drained.size());
+			return;
+		}
+
 		requeueAtFront(drained);
 	}
 
@@ -159,6 +184,7 @@ public class VictoriaSimulationMetricAdapter implements SimulationMetricStore {
 		StringBuilder payload = new StringBuilder();
 		for (SimulationTrafficMetric point : points) {
 			payload.append(MEASUREMENT);
+			payload.append(",source=sumo");
 			appendTag(payload, "simulationId", point.simulationId());
 			appendTag(payload, "roadId", point.roadId());
 			appendTag(payload, "direction", point.direction());

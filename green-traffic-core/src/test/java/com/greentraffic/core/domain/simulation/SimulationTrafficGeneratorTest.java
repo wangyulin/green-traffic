@@ -9,7 +9,16 @@ public class SimulationTrafficGeneratorTest {
 
     @Test
     void generateProducesValidMetric() {
-        SimulationTrafficGenerator generator = new SimulationTrafficGenerator();
+        java.time.Clock fixedClock = java.time.Clock.fixed(java.time.Instant.parse("2026-01-01T08:00:00Z"), java.time.ZoneOffset.UTC);
+        com.greentraffic.core.port.util.IdGenerator idGen = () -> "test-sim-id";
+        com.greentraffic.core.port.util.RandomProvider randomProvider = new com.greentraffic.core.port.util.RandomProvider() {
+            @Override
+            public int nextInt(int bound) { return Math.max(1, bound / 2); }
+            @Override
+            public double nextDouble(double origin, double bound) { return (origin + bound) / 2.0; }
+        };
+
+        SimulationTrafficGenerator generator = new SimulationTrafficGenerator(fixedClock, idGen, randomProvider);
         SimulationTrafficMetric m = generator.generate();
 
         assertNotNull(m.simulationId());

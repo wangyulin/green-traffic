@@ -1,15 +1,16 @@
 package com.greentraffic.core.domain.simulation;
 
 import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.port.util.IdGenerator;
+import com.greentraffic.core.port.util.RandomProvider;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 域层：负责仿真交通指标的生成逻辑，封装业务规则与随机化策略。
@@ -31,10 +32,20 @@ public class SimulationTrafficGenerator {
     private static final String[] DIRECTIONS = {"NORTH", "SOUTH", "EAST", "WEST", "UNKNOWN"};
     private static final String ROAD_ID = "Carbon-GRID";
 
+    private final Clock clock;
+    private final IdGenerator idGenerator;
+    private final RandomProvider randomProvider;
+
+    public SimulationTrafficGenerator(Clock clock, IdGenerator idGenerator, RandomProvider randomProvider) {
+        this.clock = clock;
+        this.idGenerator = idGenerator;
+        this.randomProvider = randomProvider;
+    }
+
     public SimulationTrafficMetric generate() {
-        String simulationId = UUID.randomUUID().toString();
-        String vehicleType = VEHICLE_TYPES[ThreadLocalRandom.current().nextInt(VEHICLE_TYPES.length)];
-        String direction = DIRECTIONS[ThreadLocalRandom.current().nextInt(DIRECTIONS.length)];
+        String simulationId = idGenerator.generate();
+        String vehicleType = VEHICLE_TYPES[randomProvider.nextInt(VEHICLE_TYPES.length)];
+        String direction = DIRECTIONS[randomProvider.nextInt(DIRECTIONS.length)];
 
         int vehicleCount = generateVehicleCount();
         double averageSpeed = generateAverageSpeed(vehicleCount);
@@ -43,7 +54,7 @@ public class SimulationTrafficGenerator {
         double averageTimeLoss = calculateTimeLoss(averageTravelTime);
         double totalRouteLength = vehicleCount * ROAD_LENGTH * 1000;
         double totalCo2Emission = calculateCo2Emission(vehicleCount, vehicleType, totalRouteLength);
-        Instant ts = Instant.now();
+        Instant ts = Instant.now(clock);
 
         return new SimulationTrafficMetric(
                 simulationId,
@@ -62,12 +73,12 @@ public class SimulationTrafficGenerator {
     }
 
     private int generateVehicleCount() {
-        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Shanghai"));
+        ZonedDateTime now = ZonedDateTime.now(clock.withZone(ZoneId.of("Asia/Shanghai")));
         LocalTime currentTime = now.toLocalTime();
         DayOfWeek dayOfWeek = now.getDayOfWeek();
         double peakFactor = getPeakFactor(currentTime, dayOfWeek);
         int baseFlow = 500;
-        double randomFactor = ThreadLocalRandom.current().nextDouble(0.8, 1.2);
+        double randomFactor = randomProvider.nextDouble(0.8, 1.2);
         int vehicleCount = (int) Math.round(baseFlow * peakFactor * randomFactor);
         return Math.max(50, Math.min(2000, vehicleCount));
     }
@@ -96,7 +107,7 @@ public class SimulationTrafficGenerator {
         double vcRatio = vehicleCount / capacity;
         double travelTimeFactor = 1 + 0.15 * Math.pow(vcRatio, 4);
         double baseSpeed = FREE_FLOW_SPEED / travelTimeFactor;
-        double randomFactor = ThreadLocalRandom.current().nextDouble(0.85, 1.15);
+        double randomFactor = randomProvider.nextDouble(0.85, 1.15);
         double speed = baseSpeed * randomFactor;
         return Math.max(5.0, Math.min(FREE_FLOW_SPEED, speed));
     }
@@ -108,23 +119,23 @@ public class SimulationTrafficGenerator {
 
     private double calculateWaitingTime(double averageSpeed) {
         double speedRatio = averageSpeed / FREE_FLOW_SPEED;
-        if (speedRatio >= 0.8) return ThreadLocalRandom.current().nextDouble(0.0, 0.5);
-        else if (speedRatio >= 0.5) return ThreadLocalRandom.current().nextDouble(0.5, 2.0);
-        else if (speedRatio >= 0.3) return ThreadLocalRandom.current().nextDouble(2.0, 5.0);
-        else return ThreadLocalRandom.current().nextDouble(5.0, 15.0);
+        if (speedRatio >= 0.8) return randomProvider.nextDouble(0.0, 0.5);
+        else if (speedRatio >= 0.5) return randomProvider.nextDouble(0.5, 2.0);
+        else if (speedRatio >= 0.3) return randomProvider.nextDouble(2.0, 5.0);
+        else return randomProvider.nextDouble(5.0, 15.0);
     }
 
     private double calculateTimeLoss(double averageTravelTime) {
         double freeFlowTravelTime = (ROAD_LENGTH / FREE_FLOW_SPEED) * 60;
         double timeLoss = Math.max(0, averageTravelTime - freeFlowTravelTime);
-        return timeLoss * ThreadLocalRandom.current().nextDouble(0.9, 1.1);
+        return timeLoss * randomProvider.nextDouble(0.9, 1.1);
     }
 
     private double calculateCo2Emission(int vehicleCount, String vehicleType, double totalRouteLength) {
         double emissionFactor = CO2_EMISSION_FACTORS.getOrDefault(vehicleType, 0.12);
         double totalEmissionGrams = vehicleCount * (totalRouteLength / 1000.0) * emissionFactor;
         double totalEmissionKg = totalEmissionGrams / 1000.0;
-        double randomFactor = ThreadLocalRandom.current().nextDouble(0.9, 1.1);
+        double randomFactor = randomProvider.nextDouble(0.9, 1.1);
         return totalEmissionKg * randomFactor;
     }
 

@@ -29,6 +29,8 @@ metrics:
   max-retries: ${METRICS_MAX_RETRIES:5}
   retry-initial-delay-ms: ${METRICS_RETRY_INITIAL_DELAY_MS:500}
   flush-interval-ms: ${METRICS_FLUSH_INTERVAL_MS:2000}
+  drop-on-failure: true
+  fallback-file-path: ${METRICS_FALLBACK_FILE_PATH:./sumo_failed_metrics_vm.log}
 
 # Example: to activate this profile, set SPRING_PROFILES_ACTIVE=vm or pass --spring.profiles.active=vm
 

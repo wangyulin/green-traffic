@@ -11,14 +11,7 @@ import java.lang.invoke.MethodHandles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.DayOfWeek;
-import java.time.LocalTime;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
+// core is framework-agnostic; keep only java standard imports when needed
 
 /**
  * 将仿真计算逻辑迁移到 core 的实现，负责生成仿真数据并发布消息。
@@ -29,10 +22,15 @@ public class SimulationOrchestrationService implements SimulationOrchestrationUs
 
     private final MessagePublisher messagePublisher;
     private final SimulationTrafficGenerator generator;
+    private final com.greentraffic.core.port.util.IdGenerator idGenerator;
+    private final java.time.Clock clock;
 
-    public SimulationOrchestrationService(MessagePublisher messagePublisher) {
+    public SimulationOrchestrationService(MessagePublisher messagePublisher, SimulationTrafficGenerator generator,
+                                           com.greentraffic.core.port.util.IdGenerator idGenerator, java.time.Clock clock) {
         this.messagePublisher = messagePublisher;
-        this.generator = new SimulationTrafficGenerator();
+        this.generator = generator;
+        this.idGenerator = idGenerator;
+        this.clock = clock;
         logger.info("SimulationOrchestrationService initialized");
     }
 
@@ -40,7 +38,7 @@ public class SimulationOrchestrationService implements SimulationOrchestrationUs
     public void generateAndPublish() {
         logger.info("Simulation orchestration triggered");
         SimulationTrafficMetric metric = generator.generate();
-        Message<SimulationTrafficMetric> msg = Message.of(TrafficMessageTypes.CO2_EMISSION, metric);
+        Message<SimulationTrafficMetric> msg = Message.of(TrafficMessageTypes.CO2_EMISSION, metric, idGenerator, clock);
         try {
             messagePublisher.publishAsync(msg);
         } catch (Exception ex) {

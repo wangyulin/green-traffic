@@ -101,7 +101,7 @@ public class BootstrapConfiguration {
     public SimulationEnginePort simulationEnginePort(ObjectProvider<DockerSimulationEngineAdapter> docker) {
         DockerSimulationEngineAdapter d = docker.getIfAvailable();
         if (d != null) return d;
-        return null;
+        throw new IllegalStateException("No SimulationEnginePort implementation available. Enable green-traffic.sumo.enabled or provide an adapter.");
     }
 
     @Bean
@@ -125,6 +125,61 @@ public class BootstrapConfiguration {
     @Bean
     @ConditionalOnMissingBean(com.greentraffic.core.port.input.SimulationOrchestrationUseCase.class)
     public com.greentraffic.core.port.input.SimulationOrchestrationUseCase simulationOrchestrationUseCase(MessagePublisher publisher) {
-        return new com.greentraffic.core.application.SimulationOrchestrationService(publisher);
+        // Composition root creates domain/service dependencies and injects into core use-case
+        // provide clock, id generator and random provider implementations for core's generator
+        java.time.Clock clock = java.time.Clock.systemDefaultZone();
+        com.greentraffic.core.port.util.IdGenerator idGen = () -> java.util.UUID.randomUUID().toString();
+        com.greentraffic.core.port.util.RandomProvider randomProvider = new com.greentraffic.core.port.util.RandomProvider() {
+            @Override
+            public int nextInt(int bound) {
+                return java.util.concurrent.ThreadLocalRandom.current().nextInt(bound);
+            }
+
+            @Override
+            public double nextDouble(double origin, double bound) {
+                return java.util.concurrent.ThreadLocalRandom.current().nextDouble(origin, bound);
+            }
+        };
+        com.greentraffic.core.domain.simulation.SimulationTrafficGenerator generator = new com.greentraffic.core.domain.simulation.SimulationTrafficGenerator(clock, idGen, randomProvider);
+        return new com.greentraffic.core.application.SimulationOrchestrationService(publisher, generator, idGen, clock);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(com.greentraffic.core.port.util.IdGenerator.class)
+    public com.greentraffic.core.port.util.IdGenerator idGenerator() {
+        return () -> java.util.UUID.randomUUID().toString();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(com.greentraffic.core.port.util.RandomProvider.class)
+    public com.greentraffic.core.port.util.RandomProvider randomProvider() {
+        return new com.greentraffic.core.port.util.RandomProvider() {
+            @Override
+            public int nextInt(int bound) { return java.util.concurrent.ThreadLocalRandom.current().nextInt(bound); }
+            @Override
+            public double nextDouble(double origin, double bound) { return java.util.concurrent.ThreadLocalRandom.current().nextDouble(origin, bound); }
+        };
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(java.time.Clock.class)
+    public java.time.Clock systemClock() {
+        return java.time.Clock.systemDefaultZone();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(org.springframework.web.client.RestTemplate.class)
+    public org.springframework.web.client.RestTemplate restTemplate() {
+        return new org.springframework.web.client.RestTemplate();
+    }
+
+    @Bean(name = "vmMetricsScheduler")
+    @ConditionalOnMissingBean(name = "vmMetricsScheduler")
+    public java.util.concurrent.ScheduledExecutorService vmMetricsScheduler() {
+        return java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "vm-shared-scheduler");
+            t.setDaemon(true);
+            return t;
+        });
     }
 }

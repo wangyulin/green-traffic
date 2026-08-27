@@ -9,9 +9,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import com.greentraffic.infrastructure.messaging.converter.MessagePayloadConverter;
 
 /**
  * Spring Events 消息订阅者
@@ -25,6 +27,11 @@ public class SpringEventsMessageSubscriber implements MessageSubscriber {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
 
     private final Map<String, Consumer<Message<?>>> handlers = new ConcurrentHashMap<>();
+    private final List<MessagePayloadConverter<?>> converters;
+
+    public SpringEventsMessageSubscriber(List<MessagePayloadConverter<?>> converters) {
+        this.converters = converters;
+    }
 
     @Override
     public void subscribe(String messageType, Consumer<Message<?>> handler) {
@@ -53,18 +60,30 @@ public class SpringEventsMessageSubscriber implements MessageSubscriber {
         }
         Message<?> message = event.getMessage();
 
+        Message<?> normalized = convertPayload(message);
+
         // 根据消息类型分发
-        Consumer<Message<?>> typeHandler = handlers.get(message.getMessageType());
+        Consumer<Message<?>> typeHandler = handlers.get(normalized.getMessageType());
         if (typeHandler != null) {
-            typeHandler.accept(message);
+            typeHandler.accept(normalized);
         }
 
         // 根据主题分发
-        if (message.getTopic() != null) {
-            Consumer<Message<?>> topicHandler = handlers.get("topic:" + message.getTopic());
+        if (normalized.getTopic() != null) {
+            Consumer<Message<?>> topicHandler = handlers.get("topic:" + normalized.getTopic());
             if (topicHandler != null) {
-                topicHandler.accept(message);
+                topicHandler.accept(normalized);
             }
         }
+    }
+
+    private Message<?> convertPayload(Message<?> message) {
+        if (converters == null || converters.isEmpty()) return message;
+        for (MessagePayloadConverter<?> converter : converters) {
+            if (converter.supports(message)) {
+                return converter.convert(message);
+            }
+        }
+        return message;
     }
 }

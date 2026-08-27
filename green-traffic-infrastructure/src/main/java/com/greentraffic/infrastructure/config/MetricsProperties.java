@@ -26,6 +26,15 @@ public class MetricsProperties {
      */
     private long flushIntervalMs = 2000L;
     /**
+     * If true, drop points after exhausting retries instead of requeueing.
+     * Useful for development environments to avoid unbounded memory growth.
+     */
+    private boolean dropOnFailure = false;
+    /**
+     * Optional local file path to append failed payloads when writes fail.
+     */
+    private String fallbackFilePath;
+    /**
      * Auth type: none | bearer | basic
      */
     private String authType = "none";
@@ -124,6 +133,22 @@ public class MetricsProperties {
 
     public long getFlushIntervalMs() {
         return flushIntervalMs;
+    }
+
+    public boolean isDropOnFailure() {
+        return dropOnFailure;
+    }
+
+    public void setDropOnFailure(boolean dropOnFailure) {
+        this.dropOnFailure = dropOnFailure;
+    }
+
+    public String getFallbackFilePath() {
+        return fallbackFilePath;
+    }
+
+    public void setFallbackFilePath(String fallbackFilePath) {
+        this.fallbackFilePath = fallbackFilePath;
     }
 
     public void setFlushIntervalMs(long flushIntervalMs) {

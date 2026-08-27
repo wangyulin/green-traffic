@@ -11,6 +11,7 @@ public class SumoSimulatorProperties {
     private Path workingDirectory = Path.of("sumo-work");
     private int durationSeconds = 300;
     private int vehiclesPerHour = 300;
+    private boolean asyncRun = true;
 
     public boolean isEnabled() {
         return enabled;
@@ -42,5 +43,13 @@ public class SumoSimulatorProperties {
 
     public void setVehiclesPerHour(int vehiclesPerHour) {
         this.vehiclesPerHour = vehiclesPerHour;
+    }
+
+    public boolean isAsyncRun() {
+        return asyncRun;
+    }
+
+    public void setAsyncRun(boolean asyncRun) {
+        this.asyncRun = asyncRun;
     }
 }
