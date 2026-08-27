@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
-import com.greentraffic.core.port.output.SimulationMetricWritePort;
+import com.greentraffic.core.port.output.SimulationMetricStore;
 import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import com.greentraffic.infrastructure.config.MetricsProperties;
 import org.junit.jupiter.api.Test;
@@ -35,8 +35,8 @@ class VictoriaSimulationMetricAdapterTest {
 	    context.registerBean(VictoriaSimulationMetricAdapter.class);
 	    context.refresh();
 
-	    assertThat(context.getBean(SimulationMetricWritePort.class))
-		    .isInstanceOf(VictoriaSimulationMetricAdapter.class);
+			assertThat(context.getBean(SimulationMetricStore.class))
+			.isInstanceOf(VictoriaSimulationMetricAdapter.class);
 	}
     }
 

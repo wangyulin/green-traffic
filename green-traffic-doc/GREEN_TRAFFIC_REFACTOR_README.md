@@ -1551,7 +1551,7 @@ mvn test
 ```text
 TrafficMetric
  ↓
-MetricWritePort
+MetricWritePort (已迁移→ TrafficMetricStore)
  ↓
 InfluxMetricAdapter
  ↓

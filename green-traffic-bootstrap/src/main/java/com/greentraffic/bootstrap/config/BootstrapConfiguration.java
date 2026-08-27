@@ -26,19 +26,6 @@ import org.springframework.context.annotation.Configuration;
 public class BootstrapConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean(MetricWritePort.class)
-    public MetricWritePort metricWritePort(
-            ObjectProvider<InfluxTrafficMetricAdapter> influx,
-            ObjectProvider<VictoriaMetricAdapter> victoria
-    ) {
-        InfluxTrafficMetricAdapter i = influx.getIfAvailable();
-        if (i != null) return i;
-        VictoriaMetricAdapter v = victoria.getIfAvailable();
-        if (v != null) return v;
-        throw new IllegalStateException("No MetricWritePort implementation available");
-    }
-
-    @Bean
     @ConditionalOnMissingBean(TrafficMetricStore.class)
     public TrafficMetricStore trafficMetricStore(
             ObjectProvider<InfluxTrafficMetricAdapter> influx,
@@ -49,32 +36,6 @@ public class BootstrapConfiguration {
         VictoriaMetricAdapter v = victoria.getIfAvailable();
         if (v != null) return v;
         throw new IllegalStateException("No TrafficMetricStore implementation available");
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(MetricQueryPort.class)
-    public MetricQueryPort metricQueryPort(
-            ObjectProvider<InfluxTrafficMetricAdapter> influx,
-            ObjectProvider<VictoriaMetricAdapter> victoria
-    ) {
-        InfluxTrafficMetricAdapter i = influx.getIfAvailable();
-        if (i != null) return i;
-        VictoriaMetricAdapter v = victoria.getIfAvailable();
-        if (v != null) return v;
-        throw new IllegalStateException("No MetricQueryPort implementation available");
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(SimulationMetricWritePort.class)
-    public SimulationMetricWritePort simulationMetricWritePort(
-            ObjectProvider<InfluxSimulationMetricAdapter> influxSim,
-            ObjectProvider<VictoriaSimulationMetricAdapter> victoriaSim
-    ) {
-        InfluxSimulationMetricAdapter i = influxSim.getIfAvailable();
-        if (i != null) return i;
-        VictoriaSimulationMetricAdapter v = victoriaSim.getIfAvailable();
-        if (v != null) return v;
-        throw new IllegalStateException("No SimulationMetricWritePort implementation available");
     }
 
     @Bean

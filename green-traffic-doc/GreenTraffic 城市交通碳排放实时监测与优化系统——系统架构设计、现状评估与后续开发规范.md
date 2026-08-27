@@ -120,7 +120,7 @@
 Core 只能知道：
 
 ```java
-MetricWritePort
+MetricWritePort (已迁移→ TrafficMetricStore)
 ```
 
 Core 不应该知道：
