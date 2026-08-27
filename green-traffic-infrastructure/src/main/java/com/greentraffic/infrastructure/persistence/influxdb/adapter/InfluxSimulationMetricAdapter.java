@@ -1,7 +1,6 @@
 package com.greentraffic.infrastructure.persistence.influxdb.adapter;
 
 import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
-import com.greentraffic.core.port.output.SimulationMetricWritePort;
 import com.greentraffic.core.port.output.SimulationMetricStore;
 import com.greentraffic.infrastructure.persistence.influxdb.client.InfluxDbClientProvider;
 import com.greentraffic.infrastructure.persistence.influxdb.config.InfluxDbProperties;
@@ -16,7 +15,7 @@ import java.util.List;
 
 @Component
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "influx")
-public class InfluxSimulationMetricAdapter implements SimulationMetricWritePort, SimulationMetricStore {
+public class InfluxSimulationMetricAdapter implements SimulationMetricStore {
 
     private static final String MEASUREMENT = "sumo_traffic_metric";
     private final InfluxDBClient client;

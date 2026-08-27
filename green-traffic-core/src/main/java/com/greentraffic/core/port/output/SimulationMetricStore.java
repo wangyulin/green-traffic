@@ -5,7 +5,7 @@ import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import java.util.List;
 
 /**
- * 能力化 Port：仿真指标存储（业务能力命名），替代技术导向的 SimulationMetricWritePort。
+ * 能力化 Port：仿真指标存储（业务能力命名），提供仿真指标的写入能力。
  */
 public interface SimulationMetricStore {
 

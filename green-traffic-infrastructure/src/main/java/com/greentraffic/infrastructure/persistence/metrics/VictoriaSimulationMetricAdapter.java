@@ -1,6 +1,5 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
-import com.greentraffic.core.port.output.SimulationMetricWritePort;
 import com.greentraffic.core.port.output.SimulationMetricStore;
 import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import com.greentraffic.infrastructure.config.MetricsProperties;
@@ -30,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "victoria-metrics")
-public class VictoriaSimulationMetricAdapter implements SimulationMetricWritePort, SimulationMetricStore {
+public class VictoriaSimulationMetricAdapter implements SimulationMetricStore {
 
 	private static final Logger log = LoggerFactory.getLogger(VictoriaSimulationMetricAdapter.class);
 	private static final String MEASUREMENT = "sumo_traffic_metric";

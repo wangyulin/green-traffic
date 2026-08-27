@@ -1,8 +1,6 @@
 package com.greentraffic.bootstrap.config;
 
-import com.greentraffic.core.port.output.MetricQueryPort;
-import com.greentraffic.core.port.output.MetricWritePort;
-import com.greentraffic.core.port.output.SimulationMetricWritePort;
+// legacy technical ports removed from bootstrap imports
 import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.output.SimulationMetricStore;
 import com.greentraffic.core.port.output.messaging.MessagePublisher;

@@ -1,8 +1,6 @@
 package com.greentraffic.infrastructure.persistence.influxdb.adapter;
 
 import com.greentraffic.core.domain.traffic.TrafficMetric;
-import com.greentraffic.core.port.output.MetricQueryPort;
-import com.greentraffic.core.port.output.MetricWritePort;
 import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import com.greentraffic.infrastructure.persistence.influxdb.client.InfluxDbClientProvider;
@@ -22,7 +20,7 @@ import java.util.Map;
 
 @Component
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "influx")
-public class InfluxTrafficMetricAdapter implements MetricWritePort, MetricQueryPort, TrafficMetricStore {
+public class InfluxTrafficMetricAdapter implements TrafficMetricStore {
 
     private static final String MEASUREMENT = "traffic_metric";
 

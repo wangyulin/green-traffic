@@ -1,8 +1,6 @@
 package com.greentraffic.infrastructure.persistence.metrics;
 
 import com.greentraffic.core.domain.traffic.TrafficMetric;
-import com.greentraffic.core.port.output.MetricQueryPort;
-import com.greentraffic.core.port.output.MetricWritePort;
 import com.greentraffic.core.port.output.TrafficMetricStore;
 import com.greentraffic.core.port.output.metrics.TrafficMetricQuery;
 import com.greentraffic.infrastructure.config.MetricsProperties;
@@ -34,7 +32,7 @@ import jakarta.annotation.PreDestroy;
 
 @Service
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "victoria-metrics")
-public class VictoriaMetricAdapter implements MetricWritePort, MetricQueryPort, TrafficMetricStore {
+public class VictoriaMetricAdapter implements TrafficMetricStore {
     private static final Logger log = LoggerFactory.getLogger(VictoriaMetricAdapter.class);
 
     private final MetricsProperties props;
