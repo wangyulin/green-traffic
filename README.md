@@ -2,6 +2,8 @@
 
 > 城市交通碳排放实时监测与智能优化系统
 
+> 迁移说明：仓库正在把旧的技术导向端口（例如 `MetricWritePort` / `MetricQueryPort` / `SimulationMetricWritePort`）迁移为按业务能力命名的能力端口（`TrafficMetricStore` / `SimulationMetricStore`）。文档与迁移步骤见 `MIGRATION_PORTS.md` 与 `MIGRATION_MESSAGING.md`。
+
 GreenTraffic 是一个面向城市交通管理场景的实时数据处理与碳排放分析系统。
 
 系统通过**交通数据模拟器 / 传感器数据源**持续产生路口交通数据，经事件驱动机制进入核心业务层，完成：

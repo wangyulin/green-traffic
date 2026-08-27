@@ -35,6 +35,9 @@ class TimeSeriesDataTestControllerTest {
     @Mock
     private QueryTrafficMetricUseCase queryUseCase;
 
+        @Mock
+        private com.greentraffic.api.mapper.TrafficMetricApiMapper mapper;
+
     @InjectMocks
     private TimeSeriesDataTestController controller;
 
@@ -47,6 +50,18 @@ class TimeSeriesDataTestControllerTest {
 
     @Test
     void writesSampleMetricThroughInputPort() throws Exception {
+        when(mapper.toCommand(org.mockito.ArgumentMatchers.any())).thenReturn(
+                new WriteTrafficMetricCommand(
+                        "ROAD-001",
+                        "EAST",
+                        "CAR",
+                        120,
+                        42.5,
+                        12.3,
+                        null,
+                        Instant.now()
+                )
+        );
         mockMvc.perform(post("/test/time_series_data/write"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("OK"));
@@ -67,6 +82,13 @@ class TimeSeriesDataTestControllerTest {
         );
         when(queryUseCase.query(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(List.of(metric));
+
+        when(mapper.toResponseList(org.mockito.ArgumentMatchers.any())).thenReturn(
+                List.of(new com.greentraffic.api.controller.dto.TrafficMetricResponse(
+                        "ROAD-001", "EAST", "CAR", 120, 42.5, 12.3, null,
+                        Instant.parse("2026-08-22T10:00:00Z")
+                ))
+        );
 
         mockMvc.perform(get("/test/time_series_data/read"))
                 .andExpect(status().isOk())

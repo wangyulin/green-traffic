@@ -57,7 +57,7 @@ class TrafficMetricMessageConsumerTest {
                 .write(WriteTrafficMetricCommand.from(metric));
 
         assertThatThrownBy(() -> handlerCaptor.getAllValues().get(0).accept(
-                Message.of(TrafficMessageTypes.TRAFFIC_DATA, metric)
+                Message.of(TrafficMessageTypes.TRAFFIC_DATA, WriteTrafficMetricCommand.from(metric))
         ))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("storage unavailable");
@@ -139,7 +139,7 @@ class TrafficMetricMessageConsumerTest {
                 .accept(
                         Message.of(
                                 TrafficMessageTypes.CO2_EMISSION,
-                                metric
+                                WriteTrafficMetricCommand.from(metric)
                         )
                 );
 
@@ -177,7 +177,7 @@ class TrafficMetricMessageConsumerTest {
                 .accept(
                         Message.of(
                                 TrafficMessageTypes.CO2_EMISSION,
-                                simulationMetric
+                                WriteSimulationTrafficMetricCommand.from(simulationMetric)
                         )
                 );
 

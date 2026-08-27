@@ -4,14 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
-import com.greentraffic.core.domain.traffic.TrafficMetric;
+import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 
 import java.util.Set;
 import java.util.Map;
 
 @Component
 public class TrafficMessageConverter
-        implements MessagePayloadConverter<TrafficMetric> {
+        implements MessagePayloadConverter<WriteTrafficMetricCommand> {
 
     private static final Set<String> SUPPORTED_MESSAGE_TYPES = Set.of(
             TrafficMessageTypes.TRAFFIC_DATA,
@@ -57,14 +57,16 @@ public class TrafficMessageConverter
 
         Object payload = message.getPayload();
 
-        // 如果 payload 已经是核心领域对象，说明无需转换
-        if (payload instanceof TrafficMetric) {
-            return false;
+        // 如果 payload 已经是 WriteTrafficMetricCommand 或核心领域对象，允许转换
+        if (payload instanceof WriteTrafficMetricCommand) {
+            return true;
         }
 
-        // 如果 payload 显式是仿真模型（来自 simulator 的 model 层），
-        // 或者是反序列化得到的 Map 且包含 simulationId 字段，
-        // 那说明这是一条仿真消息，应由 SimulationTrafficMessageConverter 处理。
+        if (payload instanceof com.greentraffic.core.domain.traffic.TrafficMetric) {
+            return true;
+        }
+
+        // 如果 payload 是仿真消息，应由 SimulationTrafficMessageConverter 处理。
         if (payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric) {
             return false;
         }
@@ -73,22 +75,25 @@ public class TrafficMessageConverter
             return false;
         }
 
+        // 其他 Map/JSON 物料也可尝试映射为 WriteTrafficMetricCommand
         return true;
     }
 
     @Override
-    public Message<TrafficMetric> convert(Message<?> message) {
-        if (message.getPayload() instanceof TrafficMetric metric) {
-            return copyWithPayload(message, metric);
+    public Message<WriteTrafficMetricCommand> convert(Message<?> message) {
+        if (message.getPayload() instanceof WriteTrafficMetricCommand cmd) {
+            return copyWithPayload(message, cmd);
         }
 
-        TrafficMetric metric =
-                objectMapper.convertValue(
-                        message.getPayload(),
-                        TrafficMetric.class
-                );
+        if (message.getPayload() instanceof com.greentraffic.core.domain.traffic.TrafficMetric domain) {
+            WriteTrafficMetricCommand cmd = WriteTrafficMetricCommand.from(domain);
+            return copyWithPayload(message, cmd);
+        }
 
-        return copyWithPayload(message, metric);
+        // 尝试把 Map/JSON 映射为 WriteTrafficMetricCommand
+        WriteTrafficMetricCommand cmd = objectMapper.convertValue(message.getPayload(), WriteTrafficMetricCommand.class);
+
+        return copyWithPayload(message, cmd);
     }
 
     @Override
@@ -96,11 +101,11 @@ public class TrafficMessageConverter
         return SUPPORTED_MESSAGE_TYPES;
     }
 
-    private Message<TrafficMetric> copyWithPayload(
+    private Message<WriteTrafficMetricCommand> copyWithPayload(
             Message<?> source,
-            TrafficMetric payload) {
+            WriteTrafficMetricCommand payload) {
 
-        return Message.<TrafficMetric>builder()
+        return Message.<WriteTrafficMetricCommand>builder()
                 .messageId(source.getMessageId())
                 .messageType(source.getMessageType())
                 .topic(source.getTopic())

@@ -1,6 +1,8 @@
 
 流程概览（从发送到写入时序库）：
 
+> 迁移状态（Messaging）：sending/receiving 已统一通过 `MessagePublisher`/`MessageSubscriber` 能力端口；适配器实现位于 `green-traffic-infrastructure`，bootstrap 按 profile 装配。剩余关注点：契约测试、幂等、DLQ/重试、trace。详见 `MIGRATION_MESSAGING.md`。
+
 - 发送（Publisher）：仿真或业务调用 `MessagePublisher.publish(...)`，在 vm 环境由 `RocketMQMessagePublisher` 实现负责把统一 `Message` 发到 RocketMQ。参见 `RocketMQMessagePublisher.publish` — `RocketMQMessagePublisher.java`
 
 - 接收（MQ Listener）：RocketMQ 消息由 RocketMQ 客户端自动路由到 `RocketMQTrafficMessageListener.onMessage`，该类把消息交给内部的 subscriber 调度。参见 `RocketMQTrafficMessageListener` — `RocketMQTrafficMessageListener.java`

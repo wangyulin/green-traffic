@@ -1,7 +1,7 @@
 package com.greentraffic.simulator.sumo;
 
 import com.greentraffic.core.port.output.simulation.SumoTripInfo;
-import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,7 +13,7 @@ final class SumoTrafficMetricMapper {
     private SumoTrafficMetricMapper() {
     }
 
-    static SimulationTrafficMetric map(String simulationId, List<SumoTripInfo> trips, Instant timestamp) {
+    static WriteSimulationTrafficMetricCommand map(String simulationId, List<SumoTripInfo> trips, Instant timestamp) {
         if (trips.isEmpty()) {
             return null;
         }
@@ -29,9 +29,19 @@ final class SumoTrafficMetricMapper {
         String vehicleType = trips.stream().map(SumoTripInfo::vehicleType).distinct().count() == 1
             ? trips.get(0).vehicleType() : "mixed";
 
-        return new SimulationTrafficMetric(
-                simulationId, "SUMO-GRID", "UNKNOWN", vehicleType, trips.size(), averageSpeed,
-                totalRouteLength / 1000 * CO2_KG_PER_KM, averageDuration, averageWaiting,
-                averageTimeLoss, totalRouteLength, timestamp);
+        return new WriteSimulationTrafficMetricCommand(
+                simulationId,
+                "SUMO-GRID",
+                "UNKNOWN",
+                vehicleType,
+                trips.size(),
+                averageSpeed,
+                totalRouteLength / 1000 * CO2_KG_PER_KM,
+                averageDuration,
+                averageWaiting,
+                averageTimeLoss,
+                totalRouteLength,
+                timestamp
+        );
     }
 }

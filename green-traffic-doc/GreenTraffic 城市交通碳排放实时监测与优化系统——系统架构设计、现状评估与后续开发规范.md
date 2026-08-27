@@ -7,6 +7,8 @@
 **架构模式：Hexagonal Architecture + Event-Driven Architecture**  
 **技术栈：Java 17 / Spring Boot 4 / Maven / Spring Events / RocketMQ / InfluxDB / VictoriaMetrics / SUMO**
 
+> 迁移状态（Messaging）：能力端口 `MessagePublisher` / `MessageSubscriber` 已定义于 `green-traffic-core`，RocketMQ 和 Spring Events adapter 已实现于 `green-traffic-infrastructure`，装配由 `green-traffic-bootstrap` 控制。请参阅仓库根目录 `MIGRATION_MESSAGING.md` 获取剩余工作清单。
+
 ---
 
 # 1. 文档目的

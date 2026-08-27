@@ -1,11 +1,14 @@
 package com.greentraffic.infrastructure.messaging;
 
-import com.greentraffic.core.domain.traffic.TrafficMetric;
+import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteSimulationTrafficMetricUseCase;
-import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
+import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.MessageSubscriber;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
@@ -66,41 +69,37 @@ public class TrafficMetricMessageConsumer {
             log.warn("Ignoring null traffic metric message");
             return;
         }
-
         Object payload = message.getPayload();
 
-        if (payload instanceof TrafficMetric metric) {
-            writeUseCase.write(
-                    WriteTrafficMetricCommand.from(metric)
-            );
+        // 优先处理传输层的 Command 对象（Adapter 应该发布 Command/DTO 而不是直接 Domain）
+        if (payload instanceof WriteTrafficMetricCommand cmd) {
+            writeUseCase.write(cmd);
             return;
         }
 
-        // 支持来自 model 层或 core.domain 的仿真实体（优先使用 core.domain 类型）
-        if (payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric domainSim) {
-            writeSimulationUseCase.write(
-                WriteSimulationTrafficMetricCommand.from(domainSim)
-            );
+        if (payload instanceof WriteSimulationTrafficMetricCommand simCmd) {
+            writeSimulationUseCase.write(simCmd);
             return;
         }
 
-        // 兼容来自外部 Adapter 的 Map/JSON 结构（例如 RocketMQ/HTTP 反序列化为 Map）
-        if (payload instanceof java.util.Map<?, ?> map && map.containsKey("simulationId")) {
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        // 兼容历史 Map 载荷：将 Map 转换为 Command（移除对 domain 类型的直接引用）
+        if (payload instanceof Map<?, ?> map) {
+            ObjectMapper mapper = new ObjectMapper();
             try {
-            mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-            mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+                mapper.registerModule(new JavaTimeModule());
+                mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             } catch (NoClassDefFoundError ignored) {
             }
 
-            com.greentraffic.core.domain.traffic.SimulationTrafficMetric domainSim =
-                mapper.convertValue(map, com.greentraffic.core.domain.traffic.SimulationTrafficMetric.class);
-
-            writeSimulationUseCase.write(
-                WriteSimulationTrafficMetricCommand.from(domainSim)
-            );
-
-            return;
+            if (map.containsKey("simulationId")) {
+                WriteSimulationTrafficMetricCommand simCmd = mapper.convertValue(map, WriteSimulationTrafficMetricCommand.class);
+                writeSimulationUseCase.write(simCmd);
+                return;
+            } else {
+                WriteTrafficMetricCommand cmd = mapper.convertValue(map, WriteTrafficMetricCommand.class);
+                writeUseCase.write(cmd);
+                return;
+            }
         }
 
         log.warn(

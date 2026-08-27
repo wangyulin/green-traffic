@@ -2,7 +2,7 @@ package com.greentraffic.simulator.scheduling;
 
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
-import com.greentraffic.core.domain.traffic.TrafficMetric;
+import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,7 +40,7 @@ public class TrafficSensorSimulator {
         // 保留一位小数
         double speedRounded = Math.round(speed * 10.0) / 10.0;
 
-        TrafficMetric metric = new TrafficMetric(
+        WriteTrafficMetricCommand command = new WriteTrafficMetricCommand(
             "ROAD-001",
             "EAST",
             null,
@@ -51,6 +51,6 @@ public class TrafficSensorSimulator {
             Instant.now()
         );
 
-        writeUseCase.write(WriteTrafficMetricCommand.from(metric));
+        writeUseCase.write(command);
     }
 }

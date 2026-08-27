@@ -6,7 +6,7 @@ import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import com.greentraffic.core.port.output.simulation.SimulationEnginePort;
 import com.greentraffic.core.port.output.simulation.SumoSimulationRequest;
 import com.greentraffic.core.port.output.simulation.SumoTripInfo;
-import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -61,7 +61,7 @@ public class SumoTrafficSimulator {
             logger.warn("Failed to serialize SUMO trips: {}", e.getMessage());
         }
         // logger.info("SUMO 当前生成的数据 trips : {}", trips_json);
-        SimulationTrafficMetric metric = SumoTrafficMetricMapper.map(simulationId, trips, Instant.now());
+        WriteSimulationTrafficMetricCommand metric = SumoTrafficMetricMapper.map(simulationId, trips, Instant.now());
 
         String metric_json = null;
         try {

@@ -30,6 +30,8 @@
 5. 业务数据与基础设施实现通过 Port 解耦；
 6. WebSocket、消息、时序数据存储都具备独立模块的演进空间。
 
+> 迁移状态（Messaging）：`MessagePublisher`/`MessageSubscriber` 能力端口已统一定义在 `green-traffic-core`，适配器（RocketMQ / SpringEvents）已在 `green-traffic-infrastructure` 实现，Bootstrap 负责按 profile 装配。剩余工作见 `MIGRATION_MESSAGING.md`。
+
 真正需要重点整改的是：
 
 | 优先级 | 问题 | 影响 |

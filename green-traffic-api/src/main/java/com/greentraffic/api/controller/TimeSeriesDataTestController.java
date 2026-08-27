@@ -1,9 +1,10 @@
 package com.greentraffic.api.controller;
 
+import com.greentraffic.api.controller.dto.TrafficMetricResponse;
+import com.greentraffic.api.controller.dto.WriteTrafficMetricRequest;
+import com.greentraffic.api.mapper.TrafficMetricApiMapper;
 import com.greentraffic.core.port.input.QueryTrafficMetricUseCase;
-import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
-import com.greentraffic.core.domain.traffic.TrafficMetric;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,38 +19,41 @@ public class TimeSeriesDataTestController {
 
     private final WriteTrafficMetricUseCase writeUseCase;
     private final QueryTrafficMetricUseCase queryUseCase;
+    private final TrafficMetricApiMapper mapper;
 
     public TimeSeriesDataTestController(WriteTrafficMetricUseCase writeUseCase,
-                                        QueryTrafficMetricUseCase queryUseCase) {
+                                        QueryTrafficMetricUseCase queryUseCase,
+                                        TrafficMetricApiMapper mapper) {
         this.writeUseCase = writeUseCase;
         this.queryUseCase = queryUseCase;
+        this.mapper = mapper;
     }
 
     @PostMapping("/write")
     public String write() {
 
-        WriteTrafficMetricCommand command = new WriteTrafficMetricCommand(
+        WriteTrafficMetricRequest req = new WriteTrafficMetricRequest(
                 "ROAD-001",
                 "EAST",
-            "CAR",
-            120,
-            42.5,
-            12.3,
+                "CAR",
+                120,
+                42.5,
+                12.3,
                 null,
                 Instant.now()
         );
 
-        writeUseCase.write(command);
+        writeUseCase.write(mapper.toCommand(req));
 
         return "OK";
     }
 
     @GetMapping("/read")
-    public List<TrafficMetric> read() {
+    public List<TrafficMetricResponse> read() {
 
         Instant stop = Instant.now();
         Instant start = stop.minusSeconds(3600);
 
-        return queryUseCase.query(start, stop);
+        return mapper.toResponseList(queryUseCase.query(start, stop));
     }
 }

@@ -2,16 +2,16 @@ package com.greentraffic.infrastructure.messaging.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
-import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
 import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
+import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 
 import java.util.Map;
 import java.util.Set;
 
 @Component
 public class SimulationTrafficMessageConverter
-        implements MessagePayloadConverter<SimulationTrafficMetric> {
+        implements MessagePayloadConverter<WriteSimulationTrafficMetricCommand> {
 
     private static final Set<String> SUPPORTED_MESSAGE_TYPES = Set.of(
             TrafficMessageTypes.TRAFFIC_DATA_BATCH,
@@ -54,38 +54,43 @@ public class SimulationTrafficMessageConverter
         }
 
         Object payload = message.getPayload();
-        return payload instanceof SimulationTrafficMetric
+        return payload instanceof WriteSimulationTrafficMetricCommand
+            || payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric
             || payload instanceof Map<?, ?> map && map.containsKey("simulationId");
     }
 
     @Override
-    public Message<SimulationTrafficMetric> convert(Message<?> message) {
+    public Message<WriteSimulationTrafficMetricCommand> convert(Message<?> message) {
         if (message == null) {
             throw new IllegalArgumentException("message must not be null");
         }
 
         Object payload = message.getPayload();
 
-        if (payload instanceof SimulationTrafficMetric metric) {
-            return copyWithPayload(message, metric);
+        if (payload instanceof WriteSimulationTrafficMetricCommand cmd) {
+            return copyWithPayload(message, cmd);
+        }
+
+        if (payload instanceof com.greentraffic.core.domain.traffic.SimulationTrafficMetric metric) {
+            return copyWithPayload(message, WriteSimulationTrafficMetricCommand.from(metric));
         }
 
         if (payload == null) {
             throw new IllegalArgumentException(
-                "Cannot convert null payload to SimulationTrafficMetric"
+                "Cannot convert null payload to WriteSimulationTrafficMetricCommand"
             );
         }
 
-        // 对于 Map 或 JSON 字符串等情况，直接映射为 core.domain.SimulationTrafficMetric
-        SimulationTrafficMetric modelMetric =
+        // 对于 Map 或 JSON 字符串等情况，尝试直接映射为 WriteSimulationTrafficMetricCommand
+        WriteSimulationTrafficMetricCommand cmd =
             objectMapper.convertValue(
                 payload,
-                SimulationTrafficMetric.class
+                WriteSimulationTrafficMetricCommand.class
             );
 
         return copyWithPayload(
             message,
-            modelMetric
+            cmd
         );
     }
 
@@ -94,13 +99,11 @@ public class SimulationTrafficMessageConverter
         return SUPPORTED_MESSAGE_TYPES;
     }
 
-    // no-op: mapping now converts directly to core.domain.SimulationTrafficMetric
-
-    private Message<SimulationTrafficMetric> copyWithPayload(
+    private Message<WriteSimulationTrafficMetricCommand> copyWithPayload(
             Message<?> source,
-            SimulationTrafficMetric payload) {
+            WriteSimulationTrafficMetricCommand payload) {
 
-        return Message.<SimulationTrafficMetric>builder()
+        return Message.<WriteSimulationTrafficMetricCommand>builder()
                 .messageId(source.getMessageId())
                 .messageType(source.getMessageType())
                 .topic(source.getTopic())

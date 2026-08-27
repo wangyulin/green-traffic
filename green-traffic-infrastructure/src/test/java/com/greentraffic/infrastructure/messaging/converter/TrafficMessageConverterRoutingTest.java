@@ -1,6 +1,6 @@
 package com.greentraffic.infrastructure.messaging.converter;
 
-import com.greentraffic.core.domain.traffic.SimulationTrafficMetric;
+import com.greentraffic.core.port.input.WriteSimulationTrafficMetricCommand;
 import com.greentraffic.core.port.output.messaging.Message;
 import com.greentraffic.core.port.output.messaging.TrafficMessageTypes;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ class TrafficMessageConverterRoutingTest {
         assertThat(trafficConverter.supports(message)).isFalse();
         assertThat(simulationConverter.supports(message)).isTrue();
 
-        SimulationTrafficMetric metric = simulationConverter.convert(message).getPayload();
+        WriteSimulationTrafficMetricCommand metric = simulationConverter.convert(message).getPayload();
         assertThat(metric.simulationId()).isEqualTo("sim-1");
         assertThat(metric.totalCo2Emission()).isEqualTo(0.5);
     }

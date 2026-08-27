@@ -38,8 +38,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RocketMQMessageSubscriberTest {
 
-    @Mock
-    private MessagePayloadConverter<TrafficMetric> converter;
+        @Mock
+        private MessagePayloadConverter<?> converter;
 
     private RocketMQMessageSubscriber subscriber;
 
@@ -168,7 +168,7 @@ class RocketMQMessageSubscriberTest {
         when(converter.supports(sourceMessage))
                 .thenReturn(true);
 
-        when(converter.convert(sourceMessage))
+        org.mockito.Mockito.<Message<?>>when(converter.convert(sourceMessage))
                 .thenReturn(convertedMessage);
 
         subscriber.dispatchMessage(sourceMessage);
