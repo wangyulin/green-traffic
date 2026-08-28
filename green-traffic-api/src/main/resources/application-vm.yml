@@ -39,6 +39,10 @@ traffic:
   storage:
     type: victoria-metrics
 
+green-traffic:
+  sumo:
+    image: ${SUMO_IMAGE:ghcr.io/eclipse-sumo/sumo:v1_27_1}
+
 messaging:
   type: rocketmq
   rocketmq:

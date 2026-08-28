@@ -48,7 +48,7 @@ class VictoriaSimulationMetricAdapterTest {
 	server.expect(once(), requestTo(properties.getVmUrl()))
 		.andExpect(method(HttpMethod.POST))
 		.andExpect(content().string(
-			"sumo_traffic_metric,simulationId=sim-1,roadId=ROAD-001,direction=EAST,vehicleType=CAR "
+			"sumo_traffic_metric,source=sumo,simulationId=sim-1,roadId=ROAD-001,direction=EAST,vehicleType=CAR "
 				+ "vehicleCount=10i,averageSpeed=30.5,totalCo2Emission=2.5,averageTravelTime=12.0,"
 				+ "averageWaitingTime=1.0,averageTimeLoss=0.5,totalRouteLength=1000.0 "
 				+ "1787738400000000000\n"

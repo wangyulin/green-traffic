@@ -5,6 +5,7 @@ import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import jakarta.annotation.PreDestroy;
 
 @Component
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "influx")
@@ -24,5 +25,16 @@ public class InfluxDbClientProvider {
 
     public InfluxDBClient getClient() {
         return client;
+    }
+
+    @PreDestroy
+    public void close() {
+        try {
+            if (client != null) {
+                client.close();
+            }
+        } catch (Exception e) {
+            // log at warn if logger present; keep silent to avoid startup failure
+        }
     }
 }
