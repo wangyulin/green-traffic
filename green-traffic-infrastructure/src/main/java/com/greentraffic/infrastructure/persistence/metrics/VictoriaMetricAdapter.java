@@ -250,7 +250,9 @@ public class VictoriaMetricAdapter implements TrafficMetricStore {
             if (p.trafficFlow() != null) { sb.append("trafficFlow=").append(p.trafficFlow()).append('i'); first = false; }
             if (p.averageSpeed() != null) { if (!first) sb.append(','); sb.append("averageSpeed=").append(p.averageSpeed()); first = false; }
             if (p.co2Emission() != null) { if (!first) sb.append(','); sb.append("co2Emission=").append(p.co2Emission()); }
-            Instant ts = p.timestamp(); long nanos = ts.getEpochSecond() * 1_000_000_000L + ts.getNano(); sb.append(' ').append(nanos).append('\n');
+            Instant ts = p.timestamp() == null ? Instant.now() : p.timestamp();
+            long nanos = ts.getEpochSecond() * 1_000_000_000L + ts.getNano();
+            sb.append(' ').append(nanos).append('\n');
         }
         return sb.toString();
     }
@@ -285,6 +287,31 @@ public class VictoriaMetricAdapter implements TrafficMetricStore {
                     writeRetries.incrementAndGet();
                     if (!retryPolicy.shouldRetry(attempts)) {
                         log.error("[VMAdapter] exhausted retries writing {} points", drained.size());
+                        // fallback behavior: write to local fallback file, drop, or requeue depending on config
+                        String fallback = props.getFallbackFilePath();
+                        if (fallback != null && !fallback.isBlank()) {
+                            try {
+                                java.nio.file.Files.writeString(
+                                        java.nio.file.Path.of(fallback),
+                                        payload,
+                                        java.nio.file.StandardOpenOption.CREATE,
+                                        java.nio.file.StandardOpenOption.APPEND
+                                );
+                                log.info("[VMAdapter] wrote failed payload to fallback file: {}", fallback);
+                                writeFailures.incrementAndGet();
+                                return;
+                            } catch (Exception e) {
+                                log.error("[VMAdapter] failed to write fallback file {}: {}", fallback, e.getMessage());
+                                // fall through to requeue
+                            }
+                        }
+
+                        if (props.isDropOnFailure()) {
+                            log.warn("[VMAdapter] dropping {} points after exhausted retries", drained.size());
+                            writeFailures.incrementAndGet();
+                            return;
+                        }
+
                         buffer.requeueAtFront(drained);
                         writeFailures.incrementAndGet();
                         return;
