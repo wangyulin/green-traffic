@@ -3,6 +3,7 @@ package com.greentraffic.api.controller;
 import com.greentraffic.core.port.input.WriteTrafficMetricUseCase;
 import com.greentraffic.core.port.input.WriteTrafficMetricCommand;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @ConditionalOnProperty(prefix = "traffic.storage", name = "type", havingValue = "victoria-metrics")
+@Profile("debug")
 @RequestMapping("test/vm")
 public class VmTestController {
     private final WriteTrafficMetricUseCase writeUseCase;

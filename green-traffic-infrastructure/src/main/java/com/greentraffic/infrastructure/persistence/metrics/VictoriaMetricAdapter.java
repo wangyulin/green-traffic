@@ -54,7 +54,7 @@ public class VictoriaMetricAdapter implements TrafficMetricStore {
         this.rest = rest;
         this.scheduler = scheduler;
         this.ownsScheduler = false;
-        this.buffer = new InMemoryMetricWriteBuffer();
+        this.buffer = new InMemoryMetricWriteBuffer(props.getBufferCapacity());
         this.retryPolicy = new ExponentialBackoffRetryPolicy(props.getMaxRetries(), props.getRetryInitialDelayMs());
     }
 
@@ -67,7 +67,7 @@ public class VictoriaMetricAdapter implements TrafficMetricStore {
             t.setDaemon(true);
             return t;
         });
-        this.buffer = new InMemoryMetricWriteBuffer();
+        this.buffer = new InMemoryMetricWriteBuffer(props.getBufferCapacity());
         this.retryPolicy = new ExponentialBackoffRetryPolicy(props.getMaxRetries(), props.getRetryInitialDelayMs());
         this.ownsScheduler = true;
     }
@@ -89,6 +89,20 @@ public class VictoriaMetricAdapter implements TrafficMetricStore {
             scheduledTask.cancel(false);
         }
         flush();
+        // persist any remaining buffered points to fallback file if configured
+        try {
+            int pending = buffer.size();
+            if (pending > 0 && props.getFallbackFilePath() != null && !props.getFallbackFilePath().isBlank()) {
+                List<TrafficMetric> remaining = buffer.drain(Math.max(1, pending));
+                if (!remaining.isEmpty()) {
+                    String payload = toLineProtocol(remaining);
+                    java.nio.file.Files.writeString(java.nio.file.Path.of(props.getFallbackFilePath()), payload, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+                    log.info("[VMAdapter] persisted {} pending points to fallback file on shutdown", remaining.size());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[VMAdapter] failed to persist pending points on shutdown: {}", e.getMessage());
+        }
         if (ownsScheduler) {
             try {
                 scheduler.shutdownNow();
@@ -103,7 +117,36 @@ public class VictoriaMetricAdapter implements TrafficMetricStore {
     public void write(List<TrafficMetric> points) {
         if (points == null || points.isEmpty()) return;
         for (TrafficMetric p : points) {
-            buffer.offer(p);
+            boolean accepted = buffer.offer(p);
+            if (!accepted) {
+                // buffer full - apply backpressure/fallback policy
+                String fallback = props.getFallbackFilePath();
+                if (fallback != null && !fallback.isBlank()) {
+                    try {
+                        String single = toLineProtocol(List.of(p));
+                        java.nio.file.Files.writeString(java.nio.file.Path.of(fallback), single, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+                        log.warn("[VMAdapter] buffer full - wrote single point to fallback file: {}", fallback);
+                        writeFailures.incrementAndGet();
+                        continue;
+                    } catch (Exception e) {
+                        log.error("[VMAdapter] failed to write fallback single point: {}", e.getMessage());
+                    }
+                }
+
+                if (props.isDropOnFailure()) {
+                    log.warn("[VMAdapter] buffer full - dropping point: {}", p);
+                    writeFailures.incrementAndGet();
+                    continue;
+                }
+
+                // trigger a flush and attempt once more
+                scheduler.execute(this::flush);
+                boolean retried = buffer.offer(p);
+                if (!retried) {
+                    log.error("[VMAdapter] buffer still full after flush trigger, dropping point");
+                    writeFailures.incrementAndGet();
+                }
+            }
         }
         if (buffer.size() >= Math.max(1, props.getBatchSize())) {
             scheduler.execute(this::flush);

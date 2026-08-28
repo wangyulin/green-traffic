@@ -19,17 +19,6 @@ public class TrafficMessageConverter
     );
 
     private final ObjectMapper objectMapper;
-
-    public TrafficMessageConverter() {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            mapper.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-            mapper.disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        } catch (NoClassDefFoundError ignored) {
-        }
-        this.objectMapper = mapper;
-    }
-
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     public TrafficMessageConverter(ObjectMapper objectMapper) {
         if (objectMapper == null) {
@@ -43,6 +32,11 @@ public class TrafficMessageConverter
         } else {
             this.objectMapper = objectMapper;
         }
+    }
+
+    // 保留无参构造器以兼容现有单元测试或手工实例化场景
+    public TrafficMessageConverter() {
+        this(null);
     }
 
     @Override

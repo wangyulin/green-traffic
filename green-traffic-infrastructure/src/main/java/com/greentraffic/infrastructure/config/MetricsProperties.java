@@ -14,6 +14,10 @@ public class MetricsProperties {
     private String vmQueryUrl;
     private int batchSize = 500;
     /**
+     * Maximum in-memory buffer capacity for pending metric points.
+     */
+    private int bufferCapacity = 10000;
+    /**
      * Max retry attempts for HTTP writes
      */
     private int maxRetries = 3;
@@ -81,6 +85,14 @@ public class MetricsProperties {
 
     public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
+    }
+
+    public int getBufferCapacity() {
+        return bufferCapacity;
+    }
+
+    public void setBufferCapacity(int bufferCapacity) {
+        this.bufferCapacity = bufferCapacity;
     }
 
     public String getAuthType() {

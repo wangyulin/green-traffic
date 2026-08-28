@@ -24,12 +24,18 @@ import com.greentraffic.infrastructure.messaging.converter.MessagePayloadConvert
 @ConditionalOnProperty(name = "messaging.type", havingValue = "events", matchIfMissing = true)
 public class SpringEventsMessageSubscriber implements MessageSubscriber {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
+    private final ObjectMapper objectMapper;
 
     private final Map<String, Consumer<Message<?>>> handlers = new ConcurrentHashMap<>();
     private final List<MessagePayloadConverter<?>> converters;
 
-    public SpringEventsMessageSubscriber(List<MessagePayloadConverter<?>> converters) {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public SpringEventsMessageSubscriber(ObjectMapper objectMapper, List<MessagePayloadConverter<?>> converters) {
+        if (objectMapper == null) {
+            this.objectMapper = new ObjectMapper().findAndRegisterModules();
+        } else {
+            this.objectMapper = objectMapper;
+        }
         this.converters = converters;
     }
 
@@ -53,7 +59,7 @@ public class SpringEventsMessageSubscriber implements MessageSubscriber {
     @EventListener
     public void onMessage(MessageEvent event) {
         try {
-            String s = OBJECT_MAPPER.writeValueAsString(event);
+            String s = objectMapper.writeValueAsString(event);
             log.info("接收到消息 {}", s);
         } catch (JsonProcessingException e) {
             log.info("接收到消息 (序列化失败) {}", event.toString());

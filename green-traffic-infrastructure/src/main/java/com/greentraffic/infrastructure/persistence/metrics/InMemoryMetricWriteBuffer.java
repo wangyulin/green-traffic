@@ -7,12 +7,20 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class InMemoryMetricWriteBuffer implements MetricWriteBuffer {
-    private final BlockingDeque<TrafficMetric> deque = new LinkedBlockingDeque<>();
+    private final BlockingDeque<TrafficMetric> deque;
+
+    public InMemoryMetricWriteBuffer() {
+        this(10000);
+    }
+
+    public InMemoryMetricWriteBuffer(int capacity) {
+        this.deque = new LinkedBlockingDeque<>(Math.max(1, capacity));
+    }
 
     @Override
-    public void offer(TrafficMetric point) {
-        if (point == null) return;
-        deque.offer(point);
+    public boolean offer(TrafficMetric point) {
+        if (point == null) return true;
+        return deque.offer(point);
     }
 
     @Override

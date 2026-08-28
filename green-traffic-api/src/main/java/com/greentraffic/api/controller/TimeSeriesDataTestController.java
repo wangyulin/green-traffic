@@ -9,11 +9,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.annotation.Profile;
 
 import java.time.Instant;
 import java.util.List;
 
 @RestController
+@Profile("debug")
 @RequestMapping("test/time_series_data")
 public class TimeSeriesDataTestController {
 
